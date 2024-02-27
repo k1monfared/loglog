@@ -62,13 +62,15 @@ The python code is going to be able to read a text file like above and provide s
 - [x] create a tree data structure that represents the structure of the text.
 - [x] handle empty lines, empty items, items with different types:
     - `regular` items start with nothing, or with `-`.
-    - `to-do` items start with `[]` or `[x]` or `[?]` and have "done" status which is `True`, `False`, or `Null`.
+    - `todo` items start with `[]` or `[x]` or `[?]` and have "done" status which is `True`, `False`, or `Null`.
         - I'm not quite sure about the syntaxing here. Maybe I can be a bit more flexible to allow compatibility, but then that adds more structure. I think keeping things simple is better.
-- [] understand whether an item is a "title" or a "text", or maybe a combination of both. here are some examples:
+- [ ] understand whether an item is a "title" or a "text", or maybe a combination of both. here are some examples:
     ```
         - example:
             - the above item is a title, and below it are a few items regarding it.
             - and this is just a text item, there is not much else you would expect to see
         - another example: but this is a combination, first there is a title of a few words, then a colon, then a longer sentence. There might still be some items below it or not
     ```
-- ...
+- [ ] prints the cleaned up version of the file to the text file.
+    - [x] prints only a node and its children
+    - [ ] prints the children to a certain depth

@@ -3,11 +3,11 @@ import re
 
 
 class TreeNode(object):
-    def __init__(self, name="", children=None, data="", type="regular"):
+    def __init__(self, name="", children=None, data=""):
         self.name = name
         self.children = []
         self.data = data
-
+        self.get_type()
         if children is not None:
             for child in children:
                 self.add_child(child)
@@ -20,16 +20,15 @@ class TreeNode(object):
         self.children.append(node)
 
     def get_type(self):
-        node.type = "regular"
-        if node.is_todo():
-            node.type = "to-do"
-            [node.status, node.data] = todo_status(node)
+        if self.is_todo():
+            self.type = "todo"
+            self.todo_status()
         else:
-            node.type = "regular"
+            self.type = "regular"
         # regular item
         regex = re.compile("- *")
-        if re.match(regex, node.data.lower()):
-            node.data = node.data[1:].strip()
+        if re.match(regex, self.data.lower()):
+            self.data = self.data[1:].strip()
 
     def is_todo(self):
         regex1 = re.compile("^\[.\]")
@@ -39,7 +38,7 @@ class TreeNode(object):
         else:
             return False
 
-    def todo_status(self) -> list(bool, str):
+    def todo_status(self):
         if self.data.lower().startswith("[]"):
             done = False
             data = self.data[2:].strip()
@@ -52,7 +51,9 @@ class TreeNode(object):
         else:
             done = None
             data = self.data[3:].strip()
-        return [done, data]
+        self.status = done
+        # I'll probably need to extend this status to a dict with different statuses for different things. At the moment I don't know what other statuses I might need though, so I'm living it as only for todo items.
+        self.data = data
 
 
 class Tree(object):
@@ -78,8 +79,6 @@ def build_tree_from_text(text_lines):
                 parent_depth, parent = stack[-1]
                 node_numbering = parent.name + str(len(parent.children)) + "."
                 node = TreeNode(name=node_numbering, data=line)
-                # to-do node
-                ...
                 parent.add_child(node)  # Add node as a child of the parent
             stack.append((depth, node))
 
@@ -104,7 +103,7 @@ def print_tree(node, depth=0, numbered=False, decor="type"):
     # decorate start of line
     line_start = decor
     if decor == "type":
-        if node.type == "to-do":
+        if node.type == "todo":
             if node.status == True:
                 line_start = "[x] "
             elif node.status == False:

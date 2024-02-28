@@ -74,3 +74,8 @@ The python code is going to be able to read a text file like above and provide s
 - [ ] prints the cleaned up version of the file to the text file.
     - [x] prints only a node and its children
     - [ ] prints the children to a certain depth
+- [ ] convert
+    - [ ] to markdown
+    - [ ] to latex
+        - [ ] to pdf
+    - [ ] to html

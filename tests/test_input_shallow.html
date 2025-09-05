@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Flat Structure - Final</title>
+    <title>test_input_shallow</title>
     <style>
         :root {
             --bg-color: #ffffff;
@@ -197,26 +197,58 @@
             ?
         </div>
     </div>
-    <h1>Flat Structure - Final</h1>
+    <h1>test_input_shallow</h1>
     <ul class="root-list">
         <li data-level="2">
-            <span class="no-children item-content ">Item A
+            <span class="no-children item-content ">Project A
 </span>
         </li>
         <li data-level="2">
-            <span class="no-children item-content ">Item B  
+            <span class="triangle expanded"></span>
+            <span class="item-content ">Project B
+</span>
+            <ul class="children">
+        <li data-level="3">
+            <span class="no-children item-content ">Task B1
 </span>
         </li>
-        <li data-level="2">
-            <span class="no-children item-content ">Item C
-</span>
+            </ul>
         </li>
         <li data-level="2">
-            <span class="no-children item-content ">Item D
+            <span class="triangle expanded"></span>
+            <span class="item-content ">Project C
+</span>
+            <ul class="children">
+        <li data-level="3">
+            <span class="triangle expanded"></span>
+            <span class="item-content ">Task C1
+</span>
+            <ul class="children">
+        <li data-level="4">
+            <span class="no-children item-content ">Subtask C1.1
 </span>
         </li>
+        <li data-level="4">
+            <span class="no-children item-content ">Subtask C1.2
+</span>
+        </li>
+            </ul>
+        </li>
+        <li data-level="3">
+            <span class="no-children item-content ">Task C2
+</span>
+        </li>
+            </ul>
+        </li>
         <li data-level="2">
-            <span class="no-children item-content ">Item E</span>
+            <span class="triangle expanded"></span>
+            <span class="item-content ">Project D
+</span>
+            <ul class="children">
+        <li data-level="3">
+            <span class="no-children item-content ">Task D1</span>
+        </li>
+            </ul>
         </li>
 
     </ul>

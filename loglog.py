@@ -71,7 +71,9 @@ class TreeNode(object):
             shallowest_leaf_depth = self._get_shallowest_leaf_depth()
             result = ""
             for child in self.children:
-                result += child.to_md(header_levels, 1, shallowest_leaf_depth)
+                child_result = child.to_md(header_levels, 1, shallowest_leaf_depth)
+                if child_result is not None:
+                    result += child_result
                 if result and not result.endswith("\n\n"):
                     result += "\n"
             return result.rstrip() + "\n"
@@ -114,9 +116,105 @@ class TreeNode(object):
             result = f"{indent}{line_start}{self.data}\n"
         
         for child in self.children:
-            result += child.to_md(header_levels, _current_depth + 1, _shallowest_leaf_depth)
+            child_result = child.to_md(header_levels, _current_depth + 1, _shallowest_leaf_depth)
+            if child_result is not None:
+                result += child_result
         
         return result
+    
+    def to_latex(self, header_levels=4):
+        """
+        Convert tree to LaTeX format by first converting to markdown,
+        then using pandoc to convert markdown to LaTeX.
+        
+        Args:
+            header_levels (int): Maximum number of header levels to use
+            
+        Returns:
+            str: LaTeX content
+        """
+        import subprocess
+        import tempfile
+        import os
+        
+        # First convert to markdown
+        md_content = self.to_md(header_levels)
+        
+        # Use pandoc to convert markdown to LaTeX
+        try:
+            # Create temporary file for markdown content
+            with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as temp_md:
+                temp_md.write(md_content)
+                temp_md_path = temp_md.name
+            
+            # Run pandoc to convert to LaTeX
+            result = subprocess.run([
+                'pandoc', 
+                temp_md_path,
+                '-t', 'latex',
+                '--standalone'
+            ], capture_output=True, text=True, check=True)
+            
+            latex_content = result.stdout
+            
+            # Clean up temporary file
+            os.unlink(temp_md_path)
+            
+            return latex_content
+            
+        except subprocess.CalledProcessError as e:
+            raise RuntimeError(f"Pandoc conversion failed: {e.stderr}")
+        except FileNotFoundError:
+            raise RuntimeError("Pandoc is not installed or not found in PATH")
+    
+    def to_pdf(self, header_levels=4):
+        """
+        Convert tree to PDF format by first converting to LaTeX,
+        then using pdflatex to convert LaTeX to PDF.
+        
+        Args:
+            header_levels (int): Maximum number of header levels to use
+            
+        Returns:
+            bytes: PDF content as bytes
+        """
+        import subprocess
+        import tempfile
+        import os
+        
+        # First convert to LaTeX
+        latex_content = self.to_latex(header_levels)
+        
+        # Use pdflatex to convert LaTeX to PDF
+        try:
+            with tempfile.TemporaryDirectory() as temp_dir:
+                # Create temporary file for LaTeX content
+                temp_tex_path = os.path.join(temp_dir, 'document.tex')
+                with open(temp_tex_path, 'w') as temp_tex:
+                    temp_tex.write(latex_content)
+                
+                # Run pdflatex to convert to PDF
+                result = subprocess.run([
+                    'pdflatex', 
+                    '-interaction=nonstopmode',
+                    '-output-directory', temp_dir,
+                    temp_tex_path
+                ], capture_output=True, text=True, cwd=temp_dir)
+                
+                # Check if PDF was created (pdflatex may succeed despite non-zero return code)
+                pdf_path = os.path.join(temp_dir, 'document.pdf')
+                if os.path.exists(pdf_path):
+                    with open(pdf_path, 'rb') as pdf_file:
+                        pdf_content = pdf_file.read()
+                        # If PDF has content, consider it successful
+                        if len(pdf_content) > 0:
+                            return pdf_content
+                
+                # If no PDF was created or it's empty, then it's a failure
+                raise RuntimeError(f"pdflatex conversion failed (return code {result.returncode}): {result.stderr}")
+                
+        except FileNotFoundError:
+            raise RuntimeError("pdflatex is not installed or not found in PATH")
 
     def to_html(self, title="Loglog Document"):
         """
@@ -1058,5 +1156,61 @@ def from_md_to_file(input_md_path):
     # Write loglog file
     with open(output_path, 'w') as f:
         f.write(loglog_content)
+    
+    return output_path
+
+
+def to_latex_file(input_file_path, header_levels=4):
+    """
+    Convert loglog file to LaTeX file with same base name.
+    
+    Args:
+        input_file_path (str): Path to input loglog file
+        header_levels (int): Maximum number of header levels to use
+        
+    Returns:
+        str: Path to generated LaTeX file
+    """
+    import os
+    
+    # Generate output path with .tex extension
+    base_name = os.path.splitext(input_file_path)[0]
+    output_path = base_name + '.tex'
+    
+    # Build tree and generate LaTeX
+    root = build_tree_from_file(input_file_path)
+    latex_content = root.to_latex(header_levels)
+    
+    # Write LaTeX to file
+    with open(output_path, 'w') as f:
+        f.write(latex_content)
+    
+    return output_path
+
+
+def to_pdf_file(input_file_path, header_levels=4):
+    """
+    Convert loglog file to PDF file with same base name.
+    
+    Args:
+        input_file_path (str): Path to input loglog file
+        header_levels (int): Maximum number of header levels to use
+        
+    Returns:
+        str: Path to generated PDF file
+    """
+    import os
+    
+    # Generate output path with .pdf extension
+    base_name = os.path.splitext(input_file_path)[0]
+    output_path = base_name + '.pdf'
+    
+    # Build tree and generate PDF
+    root = build_tree_from_file(input_file_path)
+    pdf_content = root.to_pdf(header_levels)
+    
+    # Write PDF to file
+    with open(output_path, 'wb') as f:
+        f.write(pdf_content)
     
     return output_path

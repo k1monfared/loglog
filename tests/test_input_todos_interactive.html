@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TODO Items Structure</title>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 20px;
+            background-color: #fff;
+            color: #333;
+        }
+        
+        h1 {
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+        
+        ul {
+            margin: 0;
+            padding-left: 20px;
+            list-style: none;
+        }
+        
+        li {
+            margin: 2px 0;
+            position: relative;
+        }
+        
+        .triangle {
+            display: inline-block;
+            width: 0;
+            height: 0;
+            margin-right: 5px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            user-select: none;
+        }
+        
+        .triangle.expanded {
+            border-left: 6px solid #666;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+            transform: rotate(90deg);
+        }
+        
+        .triangle.collapsed {
+            border-left: 6px solid #666;
+            border-top: 4px solid transparent;
+            border-bottom: 4px solid transparent;
+            transform: rotate(0deg);
+        }
+        
+        .item-content {
+            display: inline;
+        }
+        
+        .children {
+            margin-left: 0px;
+        }
+        
+        .children.hidden {
+            display: none;
+        }
+        
+        .todo-completed {
+            text-decoration: line-through;
+            color: #888;
+        }
+        
+        .todo-pending {
+            color: #d73502;
+        }
+        
+        .no-children {
+            margin-left: 11px;
+        }
+        
+        .keyboard-help {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            color: #666;
+            background: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            transition: opacity 0.3s;
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        .keyboard-help.hidden {
+            opacity: 0.3;
+        }
+        
+        .keyboard-help:hover {
+            opacity: 1;
+        }
+        
+        .help-toggle {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            font-size: 11px;
+            color: #999;
+            background: #f9f9f9;
+            padding: 3px 6px;
+            border-radius: 3px;
+            cursor: pointer;
+            user-select: none;
+            transition: opacity 0.3s;
+        }
+        
+        .help-toggle:hover {
+            background: #e9e9e9;
+        }
+        
+        .focused-branch {
+            background-color: #fffacd;
+            border-left: 3px solid #ffd700;
+            padding-left: 5px;
+        }
+        
+        .mouse-indicator {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            font-size: 11px;
+            color: #666;
+            background: #f9f9f9;
+            padding: 5px 8px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="keyboard-help" id="keyboardHelp">
+        Ctrl+1-9: Fold to level | Ctrl+0: Unfold all<br>
+        Ctrl+Alt+1-9: Focus mode (fold others to level)<br>
+        <small style="color: #999;">Click to hide</small>
+    </div>
+    <div class="mouse-indicator" id="mouseIndicator">
+        Mouse: Not tracking
+    </div>
+    <h1>TODO Items Structure</h1>
+    <ul class="root-list">
+        <li data-level="2">
+            <span class="triangle expanded"></span>
+            <span class="item-content todo-completed">☑ Completed Project</span>
+            <ul class="children">
+        <li data-level="3">
+            <span class="triangle expanded"></span>
+            <span class="item-content todo-completed">☑ Task 1 done</span>
+            <ul class="children">
+        <li data-level="4">
+            <span class="no-children item-content todo-pending">☐ Subtask 1.1</span>
+        </li>
+        <li data-level="4">
+            <span class="no-children item-content todo-completed">☑ Subtask 1.2</span>
+        </li>
+            </ul>
+        </li>
+        <li data-level="3">
+            <span class="no-children item-content todo-pending">☐ Task 2 pending</span>
+        </li>
+            </ul>
+        </li>
+        <li data-level="2">
+            <span class="triangle expanded"></span>
+            <span class="item-content todo-pending">☐ New Project</span>
+            <ul class="children">
+        <li data-level="3">
+            <span class="triangle expanded"></span>
+            <span class="item-content todo-pending">☐ Setup phase</span>
+            <ul class="children">
+        <li data-level="4">
+            <span class="triangle expanded"></span>
+            <span class="item-content todo-pending">☐ Requirements gathering</span>
+            <ul class="children">
+        <li data-level="5">
+            <span class="no-children item-content todo-pending">☐ Stakeholder interviews</span>
+        </li>
+        <li data-level="5">
+            <span class="no-children item-content todo-pending">☐ Technical specs</span>
+        </li>
+            </ul>
+        </li>
+        <li data-level="4">
+            <span class="no-children item-content todo-pending">☐ Planning</span>
+        </li>
+            </ul>
+        </li>
+        <li data-level="3">
+            <span class="triangle expanded"></span>
+            <span class="item-content todo-pending">☐ Development phase</span>
+            <ul class="children">
+        <li data-level="4">
+            <span class="no-children item-content todo-pending">☐ Frontend</span>
+        </li>
+        <li data-level="4">
+            <span class="no-children item-content todo-pending">☐ Backend</span>
+        </li>
+            </ul>
+        </li>
+            </ul>
+        </li>
+        <li data-level="2">
+            <span class="no-children item-content todo-pending">☐ Simple task</span>
+        </li>
+
+    </ul>
+    
+    <script>
+        let currentMouseItem = null;
+        let currentFocusedBranch = [];
+        let helpVisible = true;
+        
+        // Help toggle functionality
+        document.getElementById('keyboardHelp').addEventListener('click', function() {
+            const helpDiv = document.getElementById('keyboardHelp');
+            helpVisible = !helpVisible;
+            
+            if (helpVisible) {
+                helpDiv.classList.remove('hidden');
+                helpDiv.innerHTML = `Ctrl+1-9: Fold to level | Ctrl+0: Unfold all<br>
+                    Ctrl+Alt+1-9: Focus mode (fold others to level)<br>
+                    <small style="color: #999;">Click to hide</small>`;
+            } else {
+                helpDiv.classList.add('hidden');
+                helpDiv.innerHTML = `<small style="color: #999;">?</small>`;
+            }
+        });
+        
+        // Click handler for triangles
+        document.addEventListener('click', function(e) {
+            if (e.target.classList.contains('triangle')) {
+                const li = e.target.closest('li');
+                const children = li.querySelector('.children');
+                
+                if (children) {
+                    children.classList.toggle('hidden');
+                    e.target.classList.toggle('expanded');
+                    e.target.classList.toggle('collapsed');
+                }
+            }
+        });
+        
+        // Mouse tracking
+        document.addEventListener('mousemove', function(e) {
+            const li = e.target.closest('li[data-level]');
+            if (li !== currentMouseItem) {
+                // Clear previous focused styling
+                document.querySelectorAll('.focused-branch').forEach(el => {
+                    el.classList.remove('focused-branch');
+                });
+                
+                currentMouseItem = li;
+                
+                if (li) {
+                    const level = parseInt(li.getAttribute('data-level'));
+                    
+                    // Build branch path from root to current item
+                    currentFocusedBranch = getBranchPath(li);
+                    
+                    // Highlight the entire branch
+                    currentFocusedBranch.forEach(item => {
+                        item.classList.add('focused-branch');
+                    });
+                    
+                    // Update indicator
+                    const indicator = document.getElementById('mouseIndicator');
+                    const itemText = li.querySelector('.item-content').textContent.trim().substring(0, 20);
+                    indicator.textContent = `Mouse: Level ${level} - "${itemText}..."`;
+                } else {
+                    currentFocusedBranch = [];
+                    document.getElementById('mouseIndicator').textContent = 'Mouse: Not tracking';
+                }
+            }
+        });
+        
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey) {
+                const key = e.key;
+                
+                if (key === '0') {
+                    // Unfold everything
+                    e.preventDefault();
+                    unfoldAll();
+                } else if (key >= '1' && key <= '9') {
+                    const level = parseInt(key);
+                    
+                    if (e.altKey) {
+                        // Focus mode: fold others to level, keep current branch unfolded
+                        e.preventDefault();
+                        focusMode(level);
+                    } else {
+                        // Regular fold to specific level
+                        e.preventDefault();
+                        foldToLevel(level);
+                    }
+                }
+            }
+        });
+        
+        function unfoldAll() {
+            const allChildren = document.querySelectorAll('.children');
+            const allTriangles = document.querySelectorAll('.triangle');
+            
+            allChildren.forEach(children => children.classList.remove('hidden'));
+            allTriangles.forEach(triangle => {
+                triangle.classList.remove('collapsed');
+                triangle.classList.add('expanded');
+            });
+        }
+        
+        function foldToLevel(maxLevel) {
+            const allItems = document.querySelectorAll('li[data-level]');
+            
+            allItems.forEach(li => {
+                const level = parseInt(li.getAttribute('data-level'));
+                const children = li.querySelector('.children');
+                const triangle = li.querySelector('.triangle');
+                
+                if (children && triangle) {
+                    if (level >= maxLevel) {
+                        // Fold items at or beyond max level
+                        children.classList.add('hidden');
+                        triangle.classList.remove('expanded');
+                        triangle.classList.add('collapsed');
+                    } else {
+                        // Unfold items below max level
+                        children.classList.remove('hidden');
+                        triangle.classList.remove('collapsed');
+                        triangle.classList.add('expanded');
+                    }
+                }
+            });
+        }
+        
+        function getBranchPath(targetLi) {
+            const path = [];
+            let current = targetLi;
+            
+            while (current && current.hasAttribute('data-level')) {
+                path.unshift(current);
+                
+                // Find parent li by traversing up the DOM
+                const parentUl = current.parentElement;
+                if (parentUl && parentUl.classList.contains('children')) {
+                    current = parentUl.parentElement;
+                } else {
+                    break;
+                }
+            }
+            
+            return path;
+        }
+        
+        function focusMode(maxLevel) {
+            if (currentFocusedBranch.length === 0) {
+                // No branch focused, fall back to regular fold
+                foldToLevel(maxLevel);
+                return;
+            }
+            
+            const allItems = document.querySelectorAll('li[data-level]');
+            const focusedSet = new Set(currentFocusedBranch);
+            
+            allItems.forEach(li => {
+                const level = parseInt(li.getAttribute('data-level'));
+                const children = li.querySelector('.children');
+                const triangle = li.querySelector('.triangle');
+                
+                if (children && triangle) {
+                    const isInFocusedBranch = focusedSet.has(li);
+                    
+                    if (isInFocusedBranch) {
+                        // Keep focused branch expanded
+                        children.classList.remove('hidden');
+                        triangle.classList.remove('collapsed');
+                        triangle.classList.add('expanded');
+                    } else if (level >= maxLevel) {
+                        // Fold non-focused items at or beyond max level
+                        children.classList.add('hidden');
+                        triangle.classList.remove('expanded');
+                        triangle.classList.add('collapsed');
+                    } else {
+                        // Unfold non-focused items below max level
+                        children.classList.remove('hidden');
+                        triangle.classList.remove('collapsed');
+                        triangle.classList.add('expanded');
+                    }
+                }
+            });
+        }
+        
+    </script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/home/k1/anaconda3/bin/python3
 import json
 import sys
 

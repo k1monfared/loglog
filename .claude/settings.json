@@ -49,7 +49,7 @@
           },
           {
             "type": "command",
-            "command": "/home/k1/anaconda3/bin/python3 $CLAUDE_PROJECT_DIR/.claude/checklist.py"
+            "command": "echo '{\"transcript_path\": \"/home/k1/.claude/projects/-home-k1-Projects-loglog/02aac319-c5ec-404e-bc47-4d4525b45baf.jsonl\"}' | /home/k1/anaconda3/bin/python3 $CLAUDE_PROJECT_DIR/.claude/checklist.py"
           }
         ]
       }

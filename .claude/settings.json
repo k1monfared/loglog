@@ -46,10 +46,6 @@
           {
             "type": "command",
             "command": "say operation complete &"
-          },
-          {
-            "type": "command",
-            "command": "echo '{\"transcript_path\": \"$HOME/.claude/projects/-home-k1-Projects-loglog/02aac319-c5ec-404e-bc47-4d4525b45baf.jsonl\"}' | python3 $CLAUDE_PROJECT_DIR/.claude/checklist.py"
           }
         ]
       }

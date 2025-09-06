@@ -1,0 +1,190 @@
+- LogLog Project Roadmap #decision
+    - Project Vision #decision
+        - Philosophy: Zero structural overhead note-taking format where everything is a list
+        - Mind-first structure: Start anywhere, reorganize retroactively through indentation
+        - Cross-platform compatibility: Plain text files that work everywhere
+        - Algorithmic manipulation: Enable powerful tooling through parseable format
+    - Platform Strategy #decision
+        - Multi-platform approach: Mobile, Desktop, Web compatibility
+        - Mobile-first development completed, desktop focus next
+        - Web platform in backlog for future consideration
+        - F-Droid distribution for Android instead of Google Play Store #decision
+    - Development Philosophy #decision
+        - Simplicity over feature bloat
+        - Maintain plain-text nature of format
+        - Real-world use case validation
+        - Cross-platform compatibility preservation
+
+- Phase 1: Foundation (Completed ✅)
+    [] Core Python Library Development
+        [x] TreeNode class with hierarchical data structure
+        [x] Text parsing and tree building functionality
+        [x] Basic TODO item support ([], [x], [?] syntax)
+        [x] Tree manipulation and navigation methods
+        [x] File I/O operations
+    [] Format Conversion System
+        [x] Markdown export with shallowest leaf depth algorithm
+        [x] Markdown import with structure preservation
+        [x] Interactive HTML export with keyboard navigation
+        [x] LaTeX export via Pandoc integration
+        [x] PDF export via pdflatex
+    [] Testing Infrastructure
+        [x] Comprehensive test cases for all formats
+        [x] Round-trip conversion validation
+        [x] Edge case handling verification
+
+- Phase 2: Mobile Application (Completed ✅)
+    [] React Native Foundation
+        [x] Expo project setup with TypeScript
+        [x] Core TreeNode class ported to TypeScript
+        [x] Text parsing functions with real-time updates
+        [x] Component-based architecture design
+    [] Advanced Gesture System
+        [x] Long-press selection mode activation
+        [x] Multi-line selection with visual feedback
+        [x] Swipe-based indent/outdent operations
+        [x] Double-tap folding functionality
+        [x] Haptic feedback integration
+    [] File Management
+        [x] AsyncStorage integration for persistence
+        [x] File metadata tracking and search
+        [x] Recent files management
+        [x] Auto-save functionality
+    [] Export and Sharing
+        [x] Multi-format export (LogLog, Markdown, HTML)
+        [x] Native device sharing integration
+        [x] Self-contained HTML with theme switching
+        [x] Interactive HTML with keyboard navigation
+    [] Performance Optimization
+        [x] Debounced parsing for large documents
+        [x] LRU cache for text processing
+        [x] Memory optimization for 1000+ line documents
+        [x] Undo/redo system with history management
+    [] Quality Assurance
+        [x] Comprehensive unit test suite
+        [x] Performance testing and benchmarks
+        [x] Device testing protocols established
+        [x] Build and deployment documentation
+
+- Phase 3: Core Library Enhancement (In Progress 🔄)
+    [] Hashtag Filtering System #decision
+        [x] Filter trees by hashtags with structure preservation
+        [x] Export filtered content maintaining hierarchy
+        [x] Multiple hashtag support
+        [x] Branch path preservation for filtered results
+        [] add option to include children of the node with the hashtag in the exported tree with deduplication
+            - e.g. when a branch has hashtag #decision, I might want all the children of that node to be included
+            - also some of the children of that node might also have the hashtag #decision or another hashtag in the list that I'm interested in, I don't want those lines to be repeated multiple times. so the process should include them only once without the need to separately deduplicate.
+    [] TODO Management Enhancement
+        [x] Export TODOs with status filtering
+        [x] Structure preservation for TODO hierarchies
+        [] Advanced TODO analytics and reporting
+        [] TODO completion tracking over time
+    [] Search Functionality
+        [] Node search by title/content with regex support
+        [] Cross-document search capabilities
+        [] Search result ranking and relevance
+        [] Search index building for large document collections
+    [] Tree Manipulation
+        [] Node moving and restructuring operations
+        [] Tree merging from multiple sources
+        [] Bulk operations on selected nodes
+        [] Tree statistics and analysis
+
+- Phase 4: Linux Desktop Application (Planned 📋)
+    - Desktop Strategy #decision
+        - CLI-first approach for immediate utility and testing
+        - GUI second phase after CLI validation
+        - tkinter for GUI to minimize dependencies
+        - Focus on file management and batch operations
+    [] Command-Line Interface
+        [] argparse-based CLI with subcommands
+        [] File conversion operations (all formats)
+        [] Search commands with output formatting
+        [] TODO management commands
+        [] Batch processing capabilities
+        [] Pipeline-friendly output formats
+    [] Core Library Extensions
+        [] Advanced search with multiple criteria
+        [] Tree statistics and reporting
+        [] Knowledge graph generation (basic)
+        [] Plugin system architecture
+    [] GUI Application
+        [] tkinter-based file browser
+        [] Integrated text editor with syntax highlighting
+        [] Live preview of tree structure
+        [] Export dialog with format selection
+        [] Settings management interface
+    [] Advanced Features
+        [] Document summarization using text analysis
+        [] Topic extraction and clustering
+        [] Related document suggestions
+        [] Backup and synchronization utilities
+
+- Phase 5: Quality and Polish (Future 🔮)
+    [] Mobile App Deployment
+        [] Android device testing completion
+        [] F-Droid package preparation and submission #decision
+        [] User feedback collection and analysis
+        [] Performance validation on various devices
+    [] Documentation Enhancement
+        [] Video tutorials for core features
+        [] Interactive examples and demos
+        [] API documentation for developers
+        [] Best practices guide for LogLog format
+    [] Community Building
+        [] Plugin system for extensibility
+        [] File format standardization
+        [] Developer community establishment
+        [] Sample applications and templates
+
+- Technical Decisions Made #decision
+    - Architecture Decisions #decision
+        - Python core library as foundation for all platforms
+        - React Native with Expo for mobile development
+        - Component-based architecture with service layers
+        - Custom hooks for state management and performance
+    - Format Design Decisions #decision
+        - 4-space indentation for consistency and readability
+        - TODO syntax: [] for pending, [x] for done, [?] for unknown
+        - Hashtag support for metadata and filtering
+        - Plain text format preservation across all operations
+    - Mobile Development Decisions #decision
+        - TypeScript for type safety and development experience
+        - Gesture-based interface for touch-first experience
+        - Local-first approach with AsyncStorage persistence
+        - Self-contained exports without external dependencies
+    - Distribution Decisions #decision
+        - F-Droid for Android distribution instead of Google Play
+        - Open source approach for community engagement
+        - Cross-platform compatibility as primary requirement
+        - No iOS development priority until Android success proven
+    - Performance Decisions #decision
+        - Debounced updates for real-time editing performance
+        - LRU caching for memory management
+        - Virtual scrolling preparation for large documents
+        - Background processing for heavy operations where possible
+
+- Future Considerations #decision
+    - Platform Expansion #decision
+        - Web application using React Native Web
+        - Desktop versions for Windows/Mac using Electron
+        - Browser extension for LogLog format support
+        - API development for third-party integrations
+    - Advanced Features #decision
+        - Cloud synchronization with privacy considerations
+        - Collaborative editing capabilities
+        - AI-powered content analysis and suggestions
+        - Integration with task management systems
+    - Scaling Considerations #decision
+        - Plugin architecture for extensible functionality
+        - Format versioning for backward compatibility
+        - Performance optimization for very large documents
+        - Multi-language support for international users
+
+- Implementation Status Summary
+    [] Phase 1: Foundation ✅ Complete
+    [] Phase 2: Mobile Application ✅ Complete (pending device testing)
+    [] Phase 3: Core Library Enhancement 🔄 In Progress (70% complete)
+    [] Phase 4: Linux Desktop Application 📋 Planned (Q4 2024)
+    [] Phase 5: Quality and Polish 🔮 Future (2025+)

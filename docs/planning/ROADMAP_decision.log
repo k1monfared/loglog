@@ -1,0 +1,22 @@
+- LogLog Project Roadmap #decision
+    - Project Vision #decision
+    - Platform Strategy #decision
+        - F-Droid distribution for Android instead of Google Play Store #decision
+    - Development Philosophy #decision
+- Phase 3: Core Library Enhancement (In Progress 🔄)
+    [] Hashtag Filtering System #decision
+- Phase 4: Linux Desktop Application (Planned 📋)
+    - Desktop Strategy #decision
+- Phase 5: Quality and Polish (Future 🔮)
+    [] Mobile App Deployment
+        [] F-Droid package preparation and submission #decision
+- Technical Decisions Made #decision
+    - Architecture Decisions #decision
+    - Format Design Decisions #decision
+    - Mobile Development Decisions #decision
+    - Distribution Decisions #decision
+    - Performance Decisions #decision
+- Future Considerations #decision
+    - Platform Expansion #decision
+    - Advanced Features #decision
+    - Scaling Considerations #decision

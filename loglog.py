@@ -48,11 +48,14 @@ class TreeNode(object):
         elif self.data.lower().startswith("[x]"):
             done = True
             data = self.data[3:].strip()
+        elif self.data.lower().startswith("[-]"):
+            done = "in_progress"
+            data = self.data[3:].strip()
         else:
             done = None
             data = self.data[3:].strip()
         self.status = done
-        # I'll probably need to extend this status to a dict with different statuses for different things. At the moment I don't know what other statuses I might need though, so I'm living it as only for todo items.
+        # Extended status support: False=pending, True=completed, "in_progress"=in progress, None=unknown
         self.data = data
 
     def _get_shallowest_leaf_depth(self, current_depth=0):
@@ -93,6 +96,8 @@ class TreeNode(object):
                     content = f"[x] {self.data}"
                 elif self.status == False:
                     content = f"[ ] {self.data}"
+                elif self.status == "in_progress":
+                    content = f"[-] {self.data}"
                 else:
                     content = f"[?] {self.data}"
             else:
@@ -108,6 +113,8 @@ class TreeNode(object):
                     line_start = "- [x] "
                 elif self.status == False:
                     line_start = "- [ ] "
+                elif self.status == "in_progress":
+                    line_start = "- [-] "
                 else:
                     line_start = "- [?] "
             else:
@@ -342,6 +349,12 @@ class TreeNode(object):
         .todo-pending {{
             color: var(--todo-pending);
             font-weight: bold;
+        }}
+        
+        .todo-in-progress {{
+            color: #f39c12;
+            font-weight: bold;
+            font-style: italic;
         }}
         
         .no-children {{
@@ -833,6 +846,9 @@ class TreeNode(object):
                 elif self.status == False:
                     checkbox = "☐"
                     css_class = "todo-pending"
+                elif self.status == "in_progress":
+                    checkbox = "⚬"
+                    css_class = "todo-in-progress"
                 else:
                     checkbox = "☒"
                     css_class = "todo-pending"
@@ -1212,5 +1228,250 @@ def to_pdf_file(input_file_path, header_levels=4):
     # Write PDF to file
     with open(output_path, 'wb') as f:
         f.write(pdf_content)
+    
+    return output_path
+
+
+def filter_by_hashtags(root, hashtags, preserve_structure=True, include_children=True):
+    """
+    Filter tree to include only branches that contain specified hashtags.
+    
+    Args:
+        root (TreeNode): Root node of the tree
+        hashtags (str or list): Hashtag(s) to search for (with or without #)
+        preserve_structure (bool): Whether to preserve parent structure
+        
+    Returns:
+        TreeNode: New tree with filtered content
+    """
+    if isinstance(hashtags, str):
+        hashtags = [hashtags]
+    
+    # Normalize hashtags (ensure they start with #)
+    normalized_tags = []
+    for tag in hashtags:
+        if not tag.startswith('#'):
+            tag = '#' + tag
+        normalized_tags.append(tag.lower())
+    
+    def has_hashtag(node):
+        """Check if node contains any of the hashtags"""
+        content = node.data.lower()
+        return any(tag in content for tag in normalized_tags)
+    
+    def collect_matching_branches(node, path=[]):
+        """Collect all branches that contain hashtags"""
+        matching_branches = []
+        current_path = path + [node]
+        
+        # Check if current node has hashtag
+        if has_hashtag(node):
+            matching_branches.append(current_path)
+        
+        # Recursively check children
+        for child in node.children:
+            matching_branches.extend(collect_matching_branches(child, current_path))
+        
+        return matching_branches
+    
+    def build_filtered_tree(matching_branches):
+        """Build new tree from matching branches"""
+        if not matching_branches:
+            return None
+        
+        # Create new root
+        filtered_root = TreeNode(name="", data="")
+        filtered_root.type = "root"
+        
+        # Build structure from matching branches
+        for branch in matching_branches:
+            current = filtered_root
+            
+            # Skip root node in branch
+            for i, node in enumerate(branch[1:], 1):
+                # Find or create child at this level
+                child = None
+                for existing_child in current.children:
+                    if existing_child.name == node.name:
+                        child = existing_child
+                        break
+                
+                if child is None:
+                    # Create new child
+                    child = TreeNode(name=node.name, data=node.data)
+                    child.type = node.type
+                    if hasattr(node, 'status'):
+                        child.status = node.status
+                    current.add_child(child)
+                
+                current = child
+        
+        return filtered_root
+    
+    # Collect all matching branches
+    matching_branches = collect_matching_branches(root)
+    
+    # Build filtered tree
+    return build_filtered_tree(matching_branches)
+
+
+def export_hashtag_filtered(input_file_path, hashtags, output_suffix=None):
+    """
+    Export filtered content based on hashtags to a new file.
+    
+    Args:
+        input_file_path (str): Path to input loglog file
+        hashtags (str or list): Hashtag(s) to filter by
+        output_suffix (str): Suffix for output filename (auto-generated if None)
+        
+    Returns:
+        str: Path to generated filtered file
+    """
+    import os
+    
+    # Build tree from file
+    root = build_tree_from_file(input_file_path)
+    
+    # Filter by hashtags
+    filtered_tree = filter_by_hashtags(root, hashtags)
+    
+    if filtered_tree is None:
+        raise ValueError(f"No content found with hashtags: {hashtags}")
+    
+    # Generate output filename
+    base_name = os.path.splitext(input_file_path)[0]
+    
+    if output_suffix is None:
+        if isinstance(hashtags, str):
+            tag_suffix = hashtags.replace('#', '').replace(' ', '_')
+        else:
+            tag_suffix = '_'.join([tag.replace('#', '') for tag in hashtags])
+        output_suffix = f"_{tag_suffix}"
+    
+    output_path = f"{base_name}{output_suffix}.log"
+    
+    # Write filtered content
+    with open(output_path, 'w') as f:
+        print_tree_to_file(filtered_tree, f)
+    
+    return output_path
+
+
+def print_tree_to_file(node, file_handle, depth=0):
+    """
+    Print tree structure to file in loglog format.
+    
+    Args:
+        node (TreeNode): Node to print
+        file_handle: File handle to write to
+        depth (int): Current depth level
+    """
+    # Don't print root node
+    if node.type == "root":
+        for child in node.children:
+            print_tree_to_file(child, file_handle, depth)
+        return
+    
+    # Generate indentation
+    indent = "    " * depth
+    
+    # Generate line prefix based on type
+    if node.type == "todo":
+        if node.status == True:
+            prefix = "[x] "
+        elif node.status == False:
+            prefix = "[] "
+        elif node.status == "in_progress":
+            prefix = "[-] "
+        else:
+            prefix = "[?] "
+    else:
+        prefix = "- " if not node.data.startswith('-') else ""
+    
+    # Write the line
+    file_handle.write(f"{indent}{prefix}{node.data}\n")
+    
+    # Write children
+    for child in node.children:
+        print_tree_to_file(child, file_handle, depth + 1)
+
+
+def export_todos_filtered(input_file_path, status_filter=None, output_suffix="_todos"):
+    """
+    Export TODO items with optional status filtering.
+    
+    Args:
+        input_file_path (str): Path to input loglog file
+        status_filter: Filter by status (True=completed, False=pending, "in_progress"=in progress, None=all)
+        output_suffix (str): Suffix for output filename
+        
+    Returns:
+        str: Path to generated filtered file
+    """
+    import os
+    
+    # Build tree from file
+    root = build_tree_from_file(input_file_path)
+    
+    def collect_todo_branches(node, path=[]):
+        """Collect branches containing TODO items"""
+        matching_branches = []
+        current_path = path + [node]
+        
+        # Check if current node is a TODO with matching status
+        if node.type == "todo":
+            if status_filter is None or node.status == status_filter:
+                matching_branches.append(current_path)
+        
+        # Recursively check children
+        for child in node.children:
+            matching_branches.extend(collect_todo_branches(child, current_path))
+        
+        return matching_branches
+    
+    # Collect TODO branches
+    todo_branches = collect_todo_branches(root)
+    
+    if not todo_branches:
+        status_desc = "all" if status_filter is None else ("completed" if status_filter else "pending")
+        raise ValueError(f"No {status_desc} TODO items found")
+    
+    # Build filtered tree
+    filtered_root = TreeNode(name="", data="")
+    filtered_root.type = "root"
+    
+    for branch in todo_branches:
+        current = filtered_root
+        
+        # Skip root node in branch
+        for node in branch[1:]:
+            # Find or create child at this level
+            child = None
+            for existing_child in current.children:
+                if existing_child.name == node.name:
+                    child = existing_child
+                    break
+            
+            if child is None:
+                # Create new child
+                child = TreeNode(name=node.name, data=node.data)
+                child.type = node.type
+                if hasattr(node, 'status'):
+                    child.status = node.status
+                current.add_child(child)
+            
+            current = child
+    
+    # Generate output filename
+    base_name = os.path.splitext(input_file_path)[0]
+    if status_filter is not None:
+        status_suffix = "_completed" if status_filter else "_pending"
+        output_suffix += status_suffix
+    
+    output_path = f"{base_name}{output_suffix}.log"
+    
+    # Write filtered content
+    with open(output_path, 'w') as f:
+        print_tree_to_file(filtered_root, f)
     
     return output_path

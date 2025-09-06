@@ -87,6 +87,7 @@ LogLog is a hierarchical note-taking format that eliminates structural decision-
 
 ## Documentation
 
+- **[Environment Setup](docs/ENVIRONMENT_SETUP.md)** - Configure system-specific paths and settings
 - **[Features](docs/FEATURES.md)** - Detailed feature explanations and philosophy
 - **[Format Conversions](docs/FORMAT_CONVERSIONS.md)** - Conversion algorithms and examples
 - **[Mobile Development](docs/mobile/DEVELOPMENT_SUMMARY.md)** - Mobile app technical details
@@ -99,6 +100,10 @@ LogLog is a hierarchical note-taking format that eliminates structural decision-
 # Clone the repository
 git clone https://github.com/yourusername/loglog.git
 cd loglog
+
+# Set up environment (required for hooks and system-specific paths)
+cp .env.example .env
+# Edit .env file to match your system - see docs/ENVIRONMENT_SETUP.md
 
 # Use the Python library
 python3 -c "from loglog import build_tree_from_file; print('LogLog ready!')"

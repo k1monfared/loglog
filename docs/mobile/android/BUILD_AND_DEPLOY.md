@@ -12,7 +12,7 @@
 ### Initial Setup
 ```bash
 # Clone and navigate to project
-cd /home/k1/Projects/loglog/loglog-mobile
+cd [PROJECT_ROOT]/loglog-mobile
 
 # Install dependencies
 npm install

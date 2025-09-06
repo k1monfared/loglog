@@ -1,0 +1,19 @@
+# Environment and personal configuration
+.env
+.env.local
+.env.*.local
+
+# Personal paths and system-specific configs
+.claude/settings.local.json
+
+# User-specific files
+**/user_config.json
+**/local_config.json
+
+# System-specific temp files
+**/.DS_Store
+**/Thumbs.db
+
+# Personal notes and scratch files
+**/personal_notes/
+**/scratch/

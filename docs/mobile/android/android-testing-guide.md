@@ -19,7 +19,7 @@
 
 ### 1. Install Dependencies
 ```bash
-cd /home/k1/Projects/loglog/loglog-mobile
+cd [PROJECT_ROOT]/loglog-mobile
 npm install
 ```
 

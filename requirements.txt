@@ -1,0 +1,12 @@
+# LogLog Python Requirements
+# 
+# LogLog is designed to use only Python standard library
+# to maximize compatibility and minimize dependencies.
+#
+# The following are optional dependencies for enhanced functionality:
+
+# No required dependencies - LogLog uses only Python standard library!
+
+# Optional dependencies (install separately if needed):
+# pandoc - for LaTeX conversion (system package)
+# texlive-latex-base - for PDF generation (system package)

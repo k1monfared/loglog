@@ -1,0 +1,121 @@
+.TH LOGLOG 1 "September 2024" "LogLog 1.0.0" "User Commands"
+.SH NAME
+loglog \- hierarchical note-taking format and CLI tool
+.SH SYNOPSIS
+.B loglog
+[\fIOPTION\fR]... \fICOMMAND\fR [\fIARG\fR]...
+.SH DESCRIPTION
+LogLog is a hierarchical note-taking format that eliminates structural decision-making from the writing process. Everything is a list, even list items are lists, allowing you to start writing at any depth level and reorganize later through simple indentation.
+
+The CLI provides comprehensive tools for file conversion, content filtering, TODO management, and batch operations.
+.SH OPTIONS
+.TP
+.BR \-v ", " \-\-verbose
+Enable verbose output
+.TP
+.BR \-\-version
+Show version information and exit
+.TP
+.BR \-h ", " \-\-help
+Show help message and exit
+.SH COMMANDS
+.TP
+.B convert
+Convert LogLog files to other formats (HTML, Markdown, LaTeX, PDF)
+.TP
+.B filter
+Filter LogLog files by hashtags
+.TP
+.B todos
+Extract and manage TODO items
+.TP
+.B show
+Display LogLog file structure
+.TP
+.B search
+Search content in LogLog files
+.TP
+.B batch-convert
+Batch convert multiple files
+.TP
+.B stats
+Show file statistics
+.SH EXAMPLES
+.TP
+Convert a file to HTML:
+.B loglog convert notes.log --to html
+.TP
+Filter by hashtags:
+.B loglog filter project.log --hashtags important,decision --output filtered.log
+.TP
+Extract pending TODOs:
+.B loglog todos project.log --status pending --output todos.log
+.TP
+Batch convert all .log files:
+.B loglog batch-convert . --to html
+.TP
+Show file statistics:
+.B loglog stats project.log
+.SH FILE FORMAT
+LogLog uses a simple hierarchical format where everything is a list item:
+
+.nf
+- Top level item
+    - Nested item
+        - Deeply nested item
+    [] TODO item (pending)
+    [x] Completed TODO
+    [-] In progress TODO
+    [?] Unknown status TODO
+- Another top level item #hashtag
+.fi
+
+Files typically use the .log extension but any text file works.
+.SH TODO SYNTAX
+.TP
+.B []
+Pending task
+.TP
+.B [x]
+Completed task
+.TP
+.B [-]
+Task in progress
+.TP
+.B [?]
+Unknown status task
+.SH HASHTAGS
+Use #hashtag syntax anywhere in your text to add metadata. Hashtags can be used for filtering and organizing content across documents.
+.SH DEPENDENCIES
+LogLog requires Python 3.8+ and uses only standard library modules for maximum compatibility.
+
+Optional system dependencies:
+.TP
+.B pandoc
+Required for LaTeX conversion
+.TP
+.B texlive-latex-base
+Required for PDF generation
+.SH FILES
+.TP
+.I ~/.local/bin/loglog
+User installation location
+.TP
+.I /usr/bin/loglog
+System installation location
+.TP
+.I /usr/share/doc/loglog/
+Documentation directory
+.SH SEE ALSO
+Full documentation available at:
+.I /usr/share/doc/loglog/docs/CLI_USAGE.md
+
+Project homepage: https://github.com/loglog/loglog
+.SH AUTHOR
+Written by the LogLog Development Team.
+.SH REPORTING BUGS
+Report bugs at: https://github.com/loglog/loglog/issues
+.SH COPYRIGHT
+Copyright © 2024 LogLog Development Team. License MIT.
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.

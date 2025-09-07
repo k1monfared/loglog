@@ -1,0 +1,39 @@
+Source: loglog
+Section: text
+Priority: optional
+Maintainer: LogLog Development Team <info@loglog.dev>
+Build-Depends: debhelper (>= 12), 
+               python3 (>= 3.8), 
+               python3-setuptools,
+               dh-python
+Standards-Version: 4.5.0
+Homepage: https://github.com/loglog/loglog
+Vcs-Git: https://github.com/loglog/loglog.git
+Vcs-Browser: https://github.com/loglog/loglog
+
+Package: loglog
+Architecture: all
+Depends: ${python3:Depends}, 
+         ${misc:Depends},
+         python3 (>= 3.8)
+Recommends: pandoc, 
+           texlive-latex-base
+Suggests: texlive-latex-extra
+Description: Hierarchical note-taking format and CLI tool
+ LogLog is a hierarchical note-taking format that eliminates structural
+ decision-making from the writing process. Everything is a list, even
+ list items are lists, allowing you to start writing at any depth level
+ and reorganize later through simple indentation.
+ .
+ Features include:
+  * Zero structural overhead - focus on content, not formatting
+  * Cross-platform plain text files
+  * Algorithmically parseable for powerful tooling
+  * TODO management with status tracking
+  * Format conversion (HTML, Markdown, LaTeX, PDF)
+  * Hashtag filtering and content extraction
+  * Batch processing capabilities
+  * Interactive HTML export with keyboard navigation
+ .
+ The package includes a comprehensive command-line interface for
+ file conversion, content filtering, TODO management, and batch operations.

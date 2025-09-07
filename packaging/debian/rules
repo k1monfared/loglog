@@ -1,0 +1,35 @@
+#!/usr/bin/make -f
+
+# Debian packaging rules for LogLog
+# See debhelper(7) for documentation
+
+export DH_VERBOSE=1
+export PYBUILD_NAME=loglog
+
+%:
+	dh $@ --with python3 --buildsystem=pybuild
+
+override_dh_auto_build:
+	# Build the package using pybuild system
+	dh_auto_build
+
+override_dh_auto_install:
+	# Install using pybuild system
+	dh_auto_install
+	
+	# Install manual page
+	mkdir -p debian/loglog/usr/share/man/man1
+	install -m 644 packaging/loglog.1 debian/loglog/usr/share/man/man1/
+
+override_dh_auto_test:
+	# Run basic tests to ensure package works
+	python3 -c "import loglog; print('LogLog import successful')"
+	python3 loglog_cli.py --version
+
+override_dh_auto_clean:
+	# Clean up build artifacts
+	python3 setup.py clean --all
+	rm -rf build/
+	rm -rf *.egg-info/
+	find . -name "*.pyc" -delete
+	find . -name "__pycache__" -delete

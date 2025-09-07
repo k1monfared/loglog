@@ -1,0 +1,16 @@
+loglog (1.0.0-1) unstable; urgency=medium
+
+  * Initial release of LogLog hierarchical note-taking tool
+  * Complete CLI interface with argparse-based commands
+  * File conversion to HTML, Markdown, LaTeX, and PDF formats
+  * Content filtering by hashtags and TODO status
+  * Batch processing capabilities for multiple files
+  * Search functionality with regex support
+  * Statistics and analysis tools
+  * Interactive HTML export with keyboard navigation
+  * TODO management with status tracking
+  * Cross-platform compatibility with plain text format
+  * Zero external Python dependencies (uses standard library only)
+  * Comprehensive documentation and examples
+
+ -- LogLog Development Team <info@loglog.dev>  Sat, 07 Sep 2024 00:00:00 +0000

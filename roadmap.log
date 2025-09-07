@@ -1,0 +1,283 @@
+- LogLog GUI Development Roadmap #roadmap
+    - Phase 1: Foundation Improvements #phase1 #foundation
+        - Documentation & Cleanup #docs
+            [] Remove references to other text editors from documentation
+            [] Focus on LogLog's unique features rather than comparisons
+            [] Update feature descriptions to be self-contained
+        - System Integration #system
+            [] Replace custom styling with system theme integration
+            [] Use system fonts instead of hardcoded font families
+            [] Implement native scrollbars and UI elements
+            [] Research open source apps for system theme usage patterns
+            [] Ensure consistent appearance with other system applications
+        - Theme System Fix #themes
+            [] Fix dark mode implementation (currently showing light theme)
+            [] Create proper theme switching mechanism
+            [] Ensure theme persistence across sessions
+            [] Test theme switching without restart requirement
+    
+    - Phase 2: Core Architecture Redesign #phase2 #architecture
+        - Tree-Based Rendering System #tree-rendering
+            [] Analyze HTML export features for parity requirements
+            [] Implement node-based rendering instead of line-based text
+            [] Use existing TreeNode class from loglog.py
+            [] Create GUI components that render individual tree nodes
+            [] Separate tree structure logic from GUI presentation
+        - HTML Feature Parity #html-parity
+            [] Implement folding/collapsing of tree nodes
+            [] Add focus mode functionality
+            [] Create smooth animations for node operations
+            [] Implement tree navigation similar to HTML version
+            [] Add visual hierarchy indicators
+    
+    - Phase 3: Advanced Navigation & Interaction #phase3 #navigation
+        - Keyboard Navigation System #keyboard
+            [] Arrow Key Navigation:
+                - Up/Down: Move between sibling nodes
+                - Left: Move to parent node or collapse current node
+                - Right: Move to first child node or expand current node
+        - TODO Status Management #todo-management
+            [] Space Bar: Toggle TODO status ([] ↔ [x] ↔ [-] ↔ [?])
+            [] Question Mark (?): Set TODO to unknown status [?]
+            [] Minus (-): Set TODO to in-progress status [-]
+            [] Enter: Enter edit mode for current node text
+            [] Enter at end of text: Create new sibling node in edit mode
+        - Selection System #selection
+            [] Shift+Up/Down: Extend selection to adjacent siblings
+            [] Shift+Left: Select from current node to parent branch
+            [] Shift+Left (continued): Extend selection up the hierarchy
+            [] Shift+Right: Select all children of current node
+            [] Shift+Right (continued): Extend selection to grandchildren
+            [] Visual indication of selected nodes
+            [] Bulk operations on selected nodes
+    
+    - Phase 4: Enhanced User Experience #phase4 #ux
+        - Search Functionality #search
+            [] Ctrl+F: Simple search across entire document
+            [] Highlight matches and cycle through them
+            [] Ctrl+Shift+F: Scoped search within selected node and children
+            [] Search result navigation (Next/Previous)
+            [] Case-sensitive and regex search options
+        - Enhanced Search (Future Implementation) #enhanced-search #later
+            [] Regex Search: Support for regular expressions
+            [] Case Sensitivity Toggle: Case-sensitive/insensitive options  
+            [] Search History: Remember recent searches
+            [] Search and Replace: Bulk text replacement
+            [] Filter Mode: Show only matching items
+        - Multi-File Tab System #tabs
+            [] Tab Bar: VS Code-style tab interface
+            [] Single-Click: Open file temporarily (italic tab name)
+            [] Double-Click: Pin file permanently (normal tab name)
+            [] Tab Switching: Ctrl+Tab, Ctrl+Shift+Tab
+            [] Tab Closing: Middle-click or close button
+            [] Modified Indicators: Dot or asterisk for unsaved changes
+        - Enhanced Directory Tree #directory-tree
+            [] VS Code-style file explorer
+            [] Expand/collapse folders with proper icons
+            [] File type icons and color coding
+            [] Right-click context menus
+            [] Drag and drop file operations
+            [] Search within file tree
+    
+    - Phase 5: Quality & Polish #phase5 #polish
+        - Undo/Redo System #undo-redo
+            [] Fix Ctrl+Z/Ctrl+Y functionality
+            [] Implement proper undo stack for tree operations
+            [] Support undo for node operations (move, delete, status change)
+            [] Visual feedback for undo/redo actions
+        - Performance Optimization #performance
+            [] Optimize rendering for large documents
+            [] Implement virtual scrolling for huge trees
+            [] Lazy loading of file tree contents
+            [] Efficient syntax highlighting updates
+        - Accessibility & Usability #accessibility
+            [] Keyboard-only navigation support
+            [] Screen reader compatibility
+            [] High contrast mode support
+            [] Tooltips and help system
+
+- Implementation Priority #priority
+    - High Priority (Phase 1 & 2) #high-priority
+        [] System theme integration
+        [] Fix dark mode
+        [] Tree-based rendering architecture
+        [] Basic keyboard navigation
+    - Medium Priority (Phase 3) #medium-priority
+        [] Advanced selection system
+        [] TODO status shortcuts
+        [] Search functionality
+        [] Tab system implementation
+    - Lower Priority (Phase 4 & 5) #low-priority
+        [] Enhanced directory tree
+        [] Performance optimizations
+        [] Accessibility improvements
+        [] Advanced features and polish
+
+- Technical Considerations #technical
+    - Architecture Changes #arch-changes
+        [] Separate tree model from view rendering
+        [] Implement proper MVC pattern
+        [] Use observer pattern for tree changes
+        [] Create reusable node components
+    - Performance Requirements #perf-requirements
+        [] Sub-100ms response for navigation actions
+        [] Smooth animations (60fps target)
+        [] Memory efficient for documents with 1000+ nodes
+        [] Fast search implementation
+    - Compatibility #compatibility
+        [] Maintain backward compatibility with existing .log files
+        [] Ensure CLI integration continues to work
+        [] Cross-platform testing (Windows, macOS, Linux)
+
+- Success Metrics #success-metrics
+    [] Navigation feels as responsive as HTML version
+    [] All HTML export features have GUI equivalents
+    [] User can efficiently manage large documents (500+ items)
+    [] Keyboard-only workflow is fully supported
+    [] Interface matches system appearance standards
+
+- Navigation & Keyboard Shortcuts Specification #navigation-spec #completed
+    - Detailed Behavior Specification #detailed-spec
+        - TODO Status Cycling #todo-cycling
+            [] Space Bar: [] → [-] → [x] → [] (three-item cycle)
+            [] Question Mark: Set to unknown [?] 
+            [] Minus: Set to in-progress [-]
+            [] Multi-selection: All shortcuts work on ALL selected items
+        - Selection System Details #selection-details
+            [] Range Selection: Shift+arrows create ranges from anchor
+            [] Hierarchy Selection: Shift+left/right expands up/down tree
+            [] Ghost Highlighting: Ctrl+up/down previews, Space selects
+            [] Focus in Multi-select: Last selected item or moved with Ctrl+arrows
+        - Editing Mode Details #editing-details  
+            [] Enter in middle: Breaks line, rest becomes new item
+            [] Backspace at start: Combines with previous item
+            [] Tab/Shift+Tab: Works in edit mode and normal mode
+            [] Tab with multi-select: Applies to ALL selected items
+            [] Exit: Escape cancels, click outside saves
+        - Search Behavior Details #search-behavior
+            [] Auto-expand: Folded items expand to show matches
+            [] F3/Shift+F3: Move focus to next/previous match
+            [] Highlight: All matches highlighted in tree view
+        - Focus vs Selection Rules #focus-selection-rules
+            [] Can have selection without focus
+            [] Operations apply to ALL selected items
+            [] Focus is last selected or moved with Ctrl+arrows
+    - Current HTML Implementation Analysis #html-analysis
+        - Focus System #focus-system
+            [] Visual Focus: Items have focused visual state with borders and background
+            [] Single Focus: Only one item can be focused at a time
+            [] Focus Navigation: Arrow keys move focus between items in tree hierarchy
+        - HTML Keyboard Shortcuts #html-shortcuts
+            - Arrow Key Navigation #arrow-keys
+                [] ↑ (Up): Move to previous item in visual order
+                [] ↓ (Down): Move to next item in visual order  
+                [] → (Right):
+                    - If item is folded: Unfold and move to first child
+                    - If item is unfolded: Move to first child
+                    - If no children: Move to next item in hierarchy
+                [] ← (Left):
+                    - If item is unfolded: Fold item and stay on it
+                    - If item is folded: Move to parent item and fold parent
+            - Control Key Shortcuts #ctrl-shortcuts
+                [] Ctrl+0: Unfold all items
+                [] Ctrl+1-9: Show only levels 1-9 (fold deeper levels)
+                [] Ctrl+Shift+A: Focus mode - fold everything except current branch
+    
+    - Required GUI Implementation #gui-implementation
+        - Tree Node System #tree-nodes
+            [] LogLogTreeNode class: GUI representation of tree nodes
+            [] Navigation Manager: Handles keyboard navigation and focus
+            [] Focus management with visual indicators
+            [] Selection state management
+            [] Edit mode handling
+        - Extended Keyboard Requirements #extended-keyboard
+            - Basic Navigation (Same as HTML) #basic-nav
+                [] ↑/↓: Move focus up/down in visual order
+                [] →: Expand item or move to first child
+                [] ←: Collapse item or move to parent
+            - TODO Management (New Requirements) #todo-new
+                [] Space: Toggle TODO status ([] → [x] → [-] → [] cycle)
+                [] ?: Set TODO to unknown status [?]
+                [] -: Set TODO to in-progress status [-]
+            - Editing Mode (New Requirements) #edit-new
+                [] Enter: Enter edit mode for focused item
+                [] Enter (while editing at end): Create new sibling item
+                [] Escape: Exit edit mode without saving
+                [] Tab: Indent current item (increase level)
+                [] Shift+Tab: Outdent current item (decrease level)
+            - Selection System (New Requirements) #selection-new
+                [] Shift+↑/↓: Extend selection to siblings
+                [] Shift+←: Extend selection up hierarchy (to parent, grandparent, etc.)
+                [] Shift+→: Extend selection down hierarchy (to children, grandchildren, etc.)
+                [] Ctrl+A: Select all items at current level
+                [] Ctrl+Shift+A: Select entire branch from focused item
+            - Search System (New Requirements) #search-new
+                [] Ctrl+F: Simple search across entire document
+                [] Ctrl+Shift+F: Scoped search within selected item and children
+                [] F3 / Enter: Next search result
+                [] Shift+F3: Previous search result
+                [] Escape: Close search
+            - File Management (New Requirements) #file-new
+                [] Ctrl+T: New tab
+                [] Ctrl+W: Close current tab
+                [] Ctrl+Tab: Next tab
+                [] Ctrl+Shift+Tab: Previous tab
+    
+    - Visual Requirements #visual-req
+        - Focus Indicators #focus-indicators
+            [] Focused Item: Clear border, background highlight
+            [] Selected Items: Different background color from focus
+            [] Editing Item: Inline text editor with cursor
+        - Folding System #folding-visual
+            [] Triangle Icons: ▶ (collapsed) / ▼ (expanded)
+            [] Smooth Animations: CSS-style transitions for expand/collapse
+            [] Indentation: Visual hierarchy with proper spacing
+        - Status Indicators #status-visual
+            [] TODO States: Color-coded checkboxes
+                - [] Pending: Red
+                - [x] Complete: Gray with strikethrough
+                - [-] Progress: Orange  
+                - [?] Unknown: Yellow
+            [] Modified Indicators: Asterisk or dot for unsaved changes
+    
+    - Implementation Strategy #impl-strategy
+        - Phase 1: Tree Node Widgets #tree-widgets
+            [] Create custom tkinter widget for each tree node
+            [] Implement folding/unfolding animations
+            [] Add focus and selection visual states
+            [] Handle mouse clicks for basic interaction
+        - Phase 2: Navigation System #nav-system
+            [] Implement NavigationManager class
+            [] Add arrow key navigation
+            [] Implement focus management
+            [] Add visual focus indicators
+        - Phase 3: TODO Management #todo-impl
+            [] Add space bar TODO toggling
+            [] Implement status shortcuts (?, -)
+            [] Add visual status indicators
+            [] Handle status change animations
+        - Phase 4: Selection System #selection-impl
+            [] Implement shift+arrow selection
+            [] Add multi-selection visual feedback
+            [] Handle bulk operations on selected items
+            [] Add selection persistence
+        - Phase 5: Editing System #edit-impl
+            [] Implement inline editing with Enter key
+            [] Add new item creation
+            [] Handle tab/shift+tab for indentation
+            [] Add edit mode visual feedback
+    
+    - Success Criteria #success-criteria
+        - Responsiveness #responsiveness
+            [] < 50ms: Key press to visual feedback
+            [] < 100ms: Focus movement between items
+            [] < 200ms: Folding/unfolding animations
+        - Usability #usability
+            [] Keyboard-only: Complete functionality without mouse
+            [] Visual Clarity: Clear indication of focus, selection, and editing states
+            [] Consistent Behavior: Same navigation logic as HTML version
+            [] Smooth Experience: No visual glitches or jumping
+        - Feature Parity #feature-parity
+            [] All HTML features: Available in GUI version
+            [] Enhanced features: Additional TODO management and selection
+            [] System Integration: Native look and feel with system theme

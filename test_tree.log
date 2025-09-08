@@ -1,0 +1,11 @@
+- Sample LogLog Tree
+    [] First TODO item
+    [x] Completed task
+    [-] In progress task
+        - Sub item under progress
+        [] Sub TODO
+    [?] Unknown status item
+- Another top-level item
+    - Simple list item
+    [] Another TODO
+        - Nested under TODO

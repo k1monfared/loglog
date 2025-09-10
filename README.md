@@ -107,18 +107,49 @@ LogLog is a hierarchical note-taking format that eliminates structural decision-
 - **33KB package size** - lightweight and efficient
 - **Ubuntu repository ready** - documented submission process
 
+### Desktop GUI Application ✅
+- **Modern Tkinter-based GUI** with VS Code-style interface
+- **Multi-tab editor** with persistent tab rendering for instant switching
+- **Tree-based rendering** with keyboard navigation (arrow keys, Enter, Space)
+- **Real-time folding/unfolding** with visual hierarchy indicators
+- **TODO status management** with one-key shortcuts
+- **Search functionality** (Ctrl+F basic, Ctrl+Shift+F scoped)
+- **System theme integration** with automatic dark/light mode
+- **Comprehensive benchmarking system** for performance monitoring
+- **Viewport-based architecture** for scalable document handling
+
+**Usage**: `python3 loglog_gui.py`
+
+### Performance Benchmarking 📊
+- **Automated performance testing** with statistical analysis
+- **Version-tracked results** using git commit hashes
+- **Regression detection** with configurable thresholds
+- **Multi-dimensional metrics**: file opening, tab switching, folding operations
+- **Memory usage monitoring** and optimization tracking
+- **CI-ready integration** for continuous performance validation
+
+**Usage**: `cd benchmark && python3 benchmark_runner.py`
+
 ### Planned Features 📋
-- **Linux desktop GUI** with file browser and editor
-- **Search functionality** across document collections
+- **Search functionality** across document collections  
 - **Knowledge graph generation** from related topics
+- **Undo/redo functionality** (Ctrl+Z/Ctrl+Y)
+- **Performance optimizations** for large document handling
 
 ## Documentation
 
+### Core Features
 - **[CLI Usage Guide](docs/CLI_USAGE.md)** - Complete command-line interface documentation
-- **[Packaging Guide](docs/PACKAGING.md)** - Building and distributing .deb packages
-- **[Environment Setup](docs/ENVIRONMENT_SETUP.md)** - Configure system-specific paths and settings
 - **[Features](docs/FEATURES.md)** - Detailed feature explanations and philosophy
 - **[Format Conversions](docs/FORMAT_CONVERSIONS.md)** - Conversion algorithms and examples
+
+### GUI Application
+- **[Benchmarking System](benchmark/README.md)** - Performance testing and monitoring guide
+- **[Performance Analysis](PERFORMANCE_ANALYSIS.md)** - Current performance status and optimization roadmap
+
+### Development
+- **[Packaging Guide](docs/PACKAGING.md)** - Building and distributing .deb packages
+- **[Environment Setup](docs/ENVIRONMENT_SETUP.md)** - Configure system-specific paths and settings
 - **[Mobile Development](docs/mobile/DEVELOPMENT_SUMMARY.md)** - Mobile app technical details
 - **[Technical Architecture](docs/mobile/TECHNICAL_ARCHITECTURE.md)** - System design and patterns
 - **[Roadmap](docs/planning/ROADMAP.md)** - Complete project roadmap with decisions

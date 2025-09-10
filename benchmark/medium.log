@@ -1,0 +1,50 @@
+[] TODO item #0.0 #project
+    [-] In progress item #1.0 
+        [?] Unknown status item #2.0 
+        [?] Unknown status item #2.1 
+            [x] Completed item #4.0 
+                [x] Completed item #5.0 
+                [?] Unknown status item #5.1 
+                    [] TODO item #7.0 
+                    [] TODO item #7.1 
+                    - Regular list item #7.2 
+                    - Regular list item #7.3 #urgent
+                    [x] Completed item #7.4 
+                    - Regular list item #7.5 #urgent
+                    - Regular list item #7.6 
+                [-] In progress item #5.2 #project
+                    [] TODO item #15.0 
+                    - Regular list item #15.1 #docs
+                    [x] Completed item #15.2 
+                    [] TODO item #15.3 
+                    [-] In progress item #15.4 
+                    - Regular list item #15.5 
+                [x] Completed item #5.3 #feature
+                    [-] In progress item #22.0 
+                    [x] Completed item #22.1 
+                    [-] In progress item #22.2 
+                    [-] In progress item #22.3 #bug
+                    [-] In progress item #22.4 #bug
+                    [x] Completed item #22.5 
+                    [-] In progress item #22.6 #bug
+                [?] Unknown status item #5.4 #later
+            [x] Completed item #4.1 
+                [-] In progress item #31.0 #urgent
+                    - Regular list item #32.0 
+                    [x] Completed item #32.1 
+                    - Regular list item #32.2 
+                    [] TODO item #32.3 
+                    [-] In progress item #32.4 #later
+                    [?] Unknown status item #32.5 
+                [] TODO item #31.1 
+                    [?] Unknown status item #39.0 
+                    [?] Unknown status item #39.1 
+                    [?] Unknown status item #39.2 
+                [x] Completed item #31.2 
+                [-] In progress item #31.3 
+                    [?] Unknown status item #44.0 
+                    [] TODO item #44.1 
+                    [] TODO item #44.2 
+                    - Regular list item #44.3 
+                    [-] In progress item #44.4 
+            [?] Unknown status item #4.2 

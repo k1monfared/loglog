@@ -1,0 +1,10 @@
+- Regular list item #0.0 
+    - Regular list item #1.0 
+    [-] In progress item #1.1 
+    - Regular list item #1.2 #urgent
+        [?] Unknown status item #4.0 
+        [-] In progress item #4.1 
+[-] In progress item #0.1 
+    [] TODO item #7.0 
+    [] TODO item #7.1 
+- Regular list item #0.2 #urgent

@@ -172,7 +172,8 @@ class TreeNodeWidget(tk.Frame):
         def on_triangle_click(event):
             if self.node.children:
                 self.node.toggle_fold()
-                self.tree_renderer.refresh_display()
+                # Use viewport's optimized refresh
+                self.tree_renderer.on_node_fold_toggle(self.node)
             return "break"
         
         # Checkbox click to cycle TODO status
@@ -242,21 +243,27 @@ class TreeNodeWidget(tk.Frame):
         # Notify tree renderer of change
         self.tree_renderer.on_node_modified(self.node)
 
-class TreeRenderer(tk.Frame):
-    """Renders a LogLogTree as GUI widgets"""
+class TabViewport(tk.Frame):
+    """Persistent viewport for a single tab's tree content - industry standard approach"""
     
-    def __init__(self, parent, system_theme):
+    def __init__(self, parent, system_theme, file_path):
         super().__init__(parent, bg=system_theme.get_color('bg'))
         self.system_theme = system_theme
+        self.file_path = file_path
         self.tree = LogLogTree()
         self.node_widgets = {}  # node_id -> TreeNodeWidget mapping
+        self.node_positions = {}  # node_id -> y_position for efficient positioning
+        self.visible_nodes_cache = []  # Cache for visible nodes
+        
+        # Performance optimization flags
+        self._position_update_pending = False
+        self._batch_updates = []
         
         # Create scrollable container
         self.setup_scrollable_container()
         
-        # Bind keyboard events
-        self.focus_set()
-        self.bind_keyboard_events()
+        # Initially hidden (will be shown when tab is active)
+        self.pack_forget()
     
     def setup_scrollable_container(self):
         """Create scrollable container for tree nodes"""
@@ -269,19 +276,13 @@ class TreeRenderer(tk.Frame):
         
         self.scrollbar = tk.Scrollbar(
             self,
-            orient="vertical",
+            orient="vertical", 
             command=self.canvas.yview,
             bg=self.system_theme.get_color('bg')
         )
         
         # Create scrollable frame inside canvas
         self.scrollable_frame = tk.Frame(self.canvas, bg=self.system_theme.get_color('bg'))
-        
-        # Configure scrolling
-        self.scrollable_frame.bind(
-            "<Configure>",
-            lambda e: self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-        )
         
         # Create window in canvas
         self.canvas_window = self.canvas.create_window((0, 0), window=self.scrollable_frame, anchor="nw")
@@ -293,7 +294,7 @@ class TreeRenderer(tk.Frame):
         self.canvas.pack(side="left", fill="both", expand=True)
         self.scrollbar.pack(side="right", fill="y")
         
-        # Bind canvas resize to adjust scrollable frame width
+        # Bind canvas resize
         self.canvas.bind("<Configure>", self.on_canvas_configure)
         
         # Bind mouse wheel scrolling
@@ -301,7 +302,6 @@ class TreeRenderer(tk.Frame):
     
     def on_canvas_configure(self, event):
         """Handle canvas resize"""
-        # Update scrollable frame width to match canvas
         canvas_width = event.width
         self.canvas.itemconfig(self.canvas_window, width=canvas_width)
     
@@ -310,9 +310,263 @@ class TreeRenderer(tk.Frame):
         def on_mouse_wheel(event):
             self.canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
         
-        # Bind to canvas and scrollable frame
         self.canvas.bind("<MouseWheel>", on_mouse_wheel)
         self.scrollable_frame.bind("<MouseWheel>", on_mouse_wheel)
+    
+    def show(self):
+        """Show this viewport"""
+        self.pack(fill='both', expand=True)
+    
+    def hide(self):
+        """Hide this viewport"""
+        self.pack_forget()
+    
+    def load_content(self, content):
+        """Load tree content efficiently"""
+        self.tree.load_from_text(content)
+        self.refresh_display()
+    
+    def refresh_display(self):
+        """Efficiently update display with minimal rebuilding"""
+        visible_nodes = self.tree.get_visible_nodes()
+        visible_node_ids = set(node.id for node in visible_nodes)
+        current_widget_ids = set(self.node_widgets.keys())
+        
+        # Remove widgets for nodes that are no longer visible
+        to_remove = current_widget_ids - visible_node_ids
+        for node_id in to_remove:
+            if node_id in self.node_widgets:
+                self.node_widgets[node_id].destroy()
+                del self.node_widgets[node_id]
+        
+        # Create/update widgets for visible nodes
+        for node in visible_nodes:
+            if node.id not in self.node_widgets:
+                self.create_node_widget(node)
+            else:
+                self.node_widgets[node.id].update_from_node()
+        
+        # Update positions efficiently
+        self.update_node_positions(visible_nodes)
+        
+        # Update scroll region
+        self.after_idle(self._update_scroll_region)
+    
+    def update_node_positions(self, visible_nodes):
+        """Update node positions efficiently without full repack"""
+        for i, node in enumerate(visible_nodes):
+            if node.id in self.node_widgets:
+                widget = self.node_widgets[node.id]
+                # Use place() for absolute positioning instead of pack() for better performance
+                widget.pack_forget()
+                widget.pack(fill='x', pady=1)
+    
+    def create_node_widget(self, node):
+        """Create a widget for a tree node"""
+        widget = TreeNodeWidget(
+            self.scrollable_frame,
+            node,
+            self.system_theme,
+            self  # Pass viewport as tree_renderer
+        )
+        widget.pack(fill='x', pady=1)
+        self.node_widgets[node.id] = widget
+        return widget
+    
+    def _update_scroll_region(self):
+        """Update scroll region efficiently"""
+        self.scrollable_frame.update_idletasks()
+        self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+    
+    def on_node_fold_toggle(self, node):
+        """Handle node fold toggle with minimal impact"""
+        # Only update affected part of the tree
+        self.refresh_display()
+
+class TreeRenderer(tk.Frame):
+    """Multi-tab tree renderer with viewport management - industry standard approach"""
+    
+    def __init__(self, parent, system_theme):
+        super().__init__(parent, bg=system_theme.get_color('bg'))
+        self.system_theme = system_theme
+        
+        # Viewport management - each tab gets its own persistent viewport
+        self.viewports = {}  # file_path -> TabViewport
+        self.active_viewport = None
+        self.current_file = None
+        
+        # Create viewport container
+        self.viewport_container = tk.Frame(self, bg=system_theme.get_color('bg'))
+        self.viewport_container.pack(fill='both', expand=True)
+        
+        # Bind keyboard events to the renderer (will delegate to active viewport)
+        self.focus_set()
+        self.bind_keyboard_events()
+    
+    def get_or_create_viewport(self, file_path):
+        """Get existing viewport or create new one for file"""
+        if file_path not in self.viewports:
+            viewport = TabViewport(self.viewport_container, self.system_theme, file_path)
+            self.viewports[file_path] = viewport
+        return self.viewports[file_path]
+    
+    def switch_to_file(self, file_path, content=None):
+        """Switch to a different file's viewport - instant switching"""
+        # Hide current viewport
+        if self.active_viewport:
+            self.active_viewport.hide()
+        
+        # Get or create viewport for the file
+        viewport = self.get_or_create_viewport(file_path)
+        
+        # Load content if provided and viewport is empty
+        if content is not None and not hasattr(viewport, '_content_loaded'):
+            viewport.load_content(content)
+            viewport._content_loaded = True
+        
+        # Show the new viewport
+        viewport.show()
+        self.active_viewport = viewport
+        self.current_file = file_path
+    
+    def remove_viewport(self, file_path):
+        """Remove viewport for closed tab"""
+        if file_path in self.viewports:
+            viewport = self.viewports[file_path]
+            if viewport == self.active_viewport:
+                self.active_viewport = None
+            viewport.destroy()
+            del self.viewports[file_path]
+    
+    # Delegate properties and methods to active viewport
+    @property
+    def tree(self):
+        return self.active_viewport.tree if self.active_viewport else None
+    
+    def load_from_file(self, file_path):
+        """Load file into current viewport"""
+        if self.active_viewport:
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                self.active_viewport.load_content(content)
+                return True
+            except Exception as e:
+                print(f"Error loading file: {e}")
+                return False
+        return False
+    
+    def load_from_text(self, text):
+        """Load text into current viewport"""
+        if self.active_viewport:
+            self.active_viewport.load_content(text)
+            return True
+        return False
+    
+    # Delegation methods - forward calls to active viewport
+    def refresh_display(self):
+        """Delegate to active viewport"""
+        if self.active_viewport:
+            self.active_viewport.refresh_display()
+    
+    def refresh_fold_display(self):
+        """Delegate fold operations to active viewport"""
+        if self.active_viewport:
+            self.active_viewport.refresh_display()
+    
+    def set_focus(self, node):
+        """Delegate focus operations to active viewport"""
+        if self.active_viewport and hasattr(self.active_viewport, 'tree'):
+            self.active_viewport.tree.selection.set_focus(node)
+            self.update_selection_display()
+    
+    def update_selection_display(self):
+        """Delegate selection updates to active viewport"""
+        if self.active_viewport:
+            for widget in self.active_viewport.node_widgets.values():
+                widget.update_selection_state()
+    
+    def ensure_node_visible(self, node):
+        """Delegate scroll operations to active viewport"""
+        if self.active_viewport and node.id in self.active_viewport.node_widgets:
+            widget = self.active_viewport.node_widgets[node.id]
+            # Simple scroll to widget logic
+            widget.tk.call('::ttk::scrollableframe::center', widget)
+    
+    def get_content(self):
+        """Get current viewport content"""
+        if self.active_viewport and self.active_viewport.tree:
+            return self.active_viewport.tree.serialize()
+        return ""
+    
+    # Navigation delegation methods
+    def move_focus_up(self):
+        """Delegate navigation to active viewport"""
+        if self.active_viewport and hasattr(self.active_viewport, 'tree') and self.active_viewport.tree:
+            visible_nodes = self.active_viewport.tree.get_visible_nodes()
+            focused_node = self.active_viewport.tree.selection.focused_node
+            try:
+                current_index = visible_nodes.index(focused_node)
+                if current_index > 0:
+                    self.set_focus(visible_nodes[current_index - 1])
+            except (ValueError, IndexError):
+                pass
+    
+    def move_focus_down(self):
+        """Delegate navigation to active viewport"""
+        if self.active_viewport and hasattr(self.active_viewport, 'tree') and self.active_viewport.tree:
+            visible_nodes = self.active_viewport.tree.get_visible_nodes()
+            focused_node = self.active_viewport.tree.selection.focused_node
+            try:
+                current_index = visible_nodes.index(focused_node)
+                if current_index < len(visible_nodes) - 1:
+                    self.set_focus(visible_nodes[current_index + 1])
+            except (ValueError, IndexError):
+                pass
+    
+    def move_focus_left(self):
+        """Delegate navigation to active viewport"""
+        if self.active_viewport and hasattr(self.active_viewport, 'tree') and self.active_viewport.tree:
+            focused_node = self.active_viewport.tree.selection.focused_node
+            if focused_node.children and not focused_node.is_folded:
+                focused_node.toggle_fold()
+                self.refresh_fold_display()
+            elif focused_node.parent and focused_node.parent.node_type.value != "root":
+                self.set_focus(focused_node.parent)
+    
+    def move_focus_right(self):
+        """Delegate navigation to active viewport"""
+        if self.active_viewport and hasattr(self.active_viewport, 'tree') and self.active_viewport.tree:
+            focused_node = self.active_viewport.tree.selection.focused_node
+            if focused_node.children:
+                if focused_node.is_folded:
+                    focused_node.toggle_fold()
+                    self.refresh_fold_display()
+                else:
+                    self.set_focus(focused_node.children[0])
+    
+    def unfold_all(self):
+        """Delegate to active viewport"""
+        if self.active_viewport and hasattr(self.active_viewport, 'tree') and self.active_viewport.tree:
+            all_nodes = self.active_viewport.tree.get_all_nodes()
+            for node in all_nodes:
+                if node.is_folded:
+                    node.is_folded = False
+            self.refresh_fold_display()
+    
+    def fold_to_level(self, max_level):
+        """Delegate to active viewport"""
+        if self.active_viewport and hasattr(self.active_viewport, 'tree') and self.active_viewport.tree:
+            def fold_recursive(node, current_level=0):
+                if current_level >= max_level:
+                    node.is_folded = True
+                else:
+                    node.is_folded = False
+                    for child in node.children:
+                        fold_recursive(child, current_level + 1)
+            
+            fold_recursive(self.active_viewport.tree.root)
+            self.refresh_fold_display()
     
     def bind_keyboard_events(self):
         """Bind keyboard navigation events"""
@@ -326,7 +580,9 @@ class TreeRenderer(tk.Frame):
     def load_from_file(self, file_path):
         """Load LogLog file into tree and render"""
         try:
-            self.tree.load_from_file(file_path)
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+            self.tree.load_from_text(content)
             self.refresh_display()
             return True
         except Exception as e:
@@ -358,33 +614,27 @@ class TreeRenderer(tk.Frame):
         """Get tree content as LogLog text"""
         return self.tree.serialize()
     
-    def refresh_display(self):
-        """Rebuild the entire display from the tree"""
-        # Clear existing widgets
-        for widget in self.node_widgets.values():
-            widget.destroy()
-        self.node_widgets.clear()
+    def refresh_fold_display(self):
+        """Fast refresh specifically optimized for fold operations"""
+        # Use a deferred update to batch multiple fold operations
+        if hasattr(self, '_fold_update_pending'):
+            return
         
-        # Create widgets for visible nodes
-        visible_nodes = self.tree.get_visible_nodes()
-        for node in visible_nodes:
-            self.create_node_widget(node)
+        self._fold_update_pending = True
+        self.after_idle(self._do_fold_refresh)
+    
+    def _do_fold_refresh(self):
+        """Perform the actual fold refresh - delegate to active viewport"""
+        if hasattr(self, '_fold_update_pending'):
+            del self._fold_update_pending
         
-        # Update canvas scroll region
+        if self.active_viewport:
+            self.active_viewport.refresh_display()
+    
+    def _update_scroll_region(self):
+        """Update scroll region efficiently"""
         self.scrollable_frame.update_idletasks()
         self.canvas.configure(scrollregion=self.canvas.bbox("all"))
-    
-    def create_node_widget(self, node):
-        """Create a widget for a tree node"""
-        widget = TreeNodeWidget(
-            self.scrollable_frame,
-            node,
-            self.system_theme,
-            self
-        )
-        widget.pack(fill='x', pady=1)
-        self.node_widgets[node.id] = widget
-        return widget
     
     def set_focus(self, node):
         """Set focus to a specific node"""
@@ -398,16 +648,36 @@ class TreeRenderer(tk.Frame):
         self.ensure_node_visible(node)
     
     def update_selection_display(self):
-        """Update visual selection state for all widgets"""
-        for widget in self.node_widgets.values():
-            widget.update_selection_state()
+        """Delegate selection updates to active viewport"""
+        if self.active_viewport:
+            for widget in self.active_viewport.node_widgets.values():
+                widget.update_selection_state()
+    
+    def batch_update_nodes(self, nodes):
+        """Efficiently update multiple nodes at once"""
+        # Defer updates to prevent multiple refresh calls
+        if hasattr(self, '_batch_update_pending'):
+            return
+        
+        self._batch_update_pending = True
+        self.after_idle(lambda: self._do_batch_update(nodes))
+    
+    def _do_batch_update(self, nodes):
+        """Delegate batch update to active viewport"""
+        if hasattr(self, '_batch_update_pending'):
+            del self._batch_update_pending
+        
+        if self.active_viewport:
+            for node in nodes:
+                if node.id in self.active_viewport.node_widgets:
+                    self.active_viewport.node_widgets[node.id].update_from_node()
     
     def ensure_node_visible(self, node):
-        """Scroll to ensure node is visible"""
-        if node.id not in self.node_widgets:
+        """Delegate scroll operations to active viewport"""
+        if not self.active_viewport or node.id not in self.active_viewport.node_widgets:
             return
             
-        widget = self.node_widgets[node.id]
+        widget = self.active_viewport.node_widgets[node.id]
         
         # Get widget position relative to scrollable frame
         widget.update_idletasks()
@@ -415,11 +685,11 @@ class TreeRenderer(tk.Frame):
         widget_height = widget.winfo_height()
         
         # Get canvas dimensions
-        canvas_height = self.canvas.winfo_height()
+        canvas_height = self.active_viewport.canvas.winfo_height()
         
         # Calculate scroll position
-        scroll_top, scroll_bottom = self.canvas.yview()
-        scrollable_height = self.scrollable_frame.winfo_reqheight()
+        scroll_top, scroll_bottom = self.active_viewport.canvas.yview()
+        scrollable_height = self.active_viewport.scrollable_frame.winfo_reqheight()
         
         # Convert to pixel coordinates
         visible_top = scroll_top * scrollable_height
@@ -430,7 +700,7 @@ class TreeRenderer(tk.Frame):
             # Scroll to make widget visible
             new_scroll_top = max(0, widget_top - canvas_height // 4)
             scroll_fraction = new_scroll_top / scrollable_height if scrollable_height > 0 else 0
-            self.canvas.yview_moveto(scroll_fraction)
+            self.active_viewport.canvas.yview_moveto(scroll_fraction)
     
     def handle_keyboard_event(self, event):
         """Handle keyboard navigation"""
@@ -514,7 +784,7 @@ class TreeRenderer(tk.Frame):
         if focused_node.children and not focused_node.is_folded:
             # Fold current node
             focused_node.toggle_fold()
-            self.refresh_display()
+            self.refresh_fold_display()
         elif focused_node.parent and focused_node.parent.node_type.value != "root":
             # Move to parent
             self.set_focus(focused_node.parent)
@@ -527,16 +797,17 @@ class TreeRenderer(tk.Frame):
             if focused_node.is_folded:
                 # Unfold current node
                 focused_node.toggle_fold()
-                self.refresh_display()
+                self.refresh_fold_display()
             else:
                 # Move to first child
                 self.set_focus(focused_node.children[0])
     
     def start_editing_focused(self):
-        """Start editing the focused node"""
-        focused_node = self.tree.selection.focused_node
-        if focused_node and focused_node.id in self.node_widgets:
-            self.node_widgets[focused_node.id].start_editing()
+        """Delegate start editing to active viewport"""
+        if self.active_viewport:
+            focused_node = self.active_viewport.tree.selection.focused_node
+            if focused_node and focused_node.id in self.active_viewport.node_widgets:
+                self.active_viewport.node_widgets[focused_node.id].start_editing()
     
     def toggle_todo_status(self):
         """Toggle TODO status of all selected nodes"""
@@ -623,7 +894,7 @@ class TreeRenderer(tk.Frame):
         for node in all_nodes:
             if node.is_folded:
                 node.is_folded = False
-        self.refresh_display()
+        self.refresh_fold_display()
     
     def fold_to_level(self, max_level):
         """Fold all nodes deeper than max_level"""
@@ -636,7 +907,7 @@ class TreeRenderer(tk.Frame):
                     fold_recursive(child, current_level + 1)
         
         fold_recursive(self.tree.root)
-        self.refresh_display()
+        self.refresh_fold_display()
     
     def focus_mode(self, max_level):
         """Focus mode: fold everything except current branch to max_level"""
@@ -666,7 +937,7 @@ class TreeRenderer(tk.Frame):
                     fold_with_focus(child, current_level + 1, node_in_path)
         
         fold_with_focus(self.tree.root)
-        self.refresh_display()
+        self.refresh_fold_display()
     
     def on_node_modified(self, node):
         """Called when a node is modified"""
@@ -706,39 +977,82 @@ class SystemTheme:
         self._setup_system_colors()
     
     def _setup_system_colors(self):
-        """Extract system colors from tkinter"""
+        """Extract system colors from tkinter and detect dark mode"""
         try:
             # Create temporary widget to extract system colors
             temp_frame = tk.Frame(self.root)
             temp_text = tk.Text(temp_frame)
             temp_button = tk.Button(temp_frame)
             
-            # Extract system colors
-            self.colors = {
-                'bg': temp_frame.cget('bg'),
-                'fg': temp_text.cget('fg'),
-                'select_bg': temp_text.cget('selectbackground'),
-                'select_fg': temp_text.cget('selectforeground'),
-                'button_bg': temp_button.cget('bg'),
-                'button_fg': temp_button.cget('fg'),
-                'insert_bg': temp_text.cget('insertbackground'),
-                'disabled_fg': temp_text.cget('disabledforeground'),
-            }
+            # Extract base system colors
+            base_bg = temp_frame.cget('bg')
+            base_fg = temp_text.cget('fg')
             
             # Clean up temporary widgets
             temp_frame.destroy()
             
-            # Set semantic colors based on system colors
-            self.semantic_colors = {
-                'error': '#d73a49',  # Keep these for consistency
-                'warning': '#f66a0a',
-                'success': '#28a745',
-                'todo_pending': self.colors['fg'],
-                'todo_completed': self.colors['disabled_fg'],
-                'todo_progress': '#f66a0a',
-                'hashtag': self.colors['select_bg'],
-                'bullet': self.colors['fg'],
-            }
+            # Detect if we're in dark mode based on system colors
+            # Check for environment variable override
+            import os
+            if os.environ.get('LOGLOG_LIGHT_MODE') == '1':
+                # Explicit light mode override
+                self.is_dark_mode = False
+            elif os.environ.get('LOGLOG_DARK_MODE') == '1':
+                # Explicit dark mode override
+                self.is_dark_mode = True
+            else:
+                # Default to dark mode, but try to detect system preference
+                system_dark = self._is_dark_color(base_bg)
+                self.is_dark_mode = True  # Default to dark mode
+            
+            if self.is_dark_mode:
+                # Use dark theme colors
+                self.colors = {
+                    'bg': '#2d2d30',
+                    'fg': '#cccccc',
+                    'select_bg': '#094771',
+                    'select_fg': '#ffffff',
+                    'button_bg': '#3c3c3c',
+                    'button_fg': '#cccccc',
+                    'insert_bg': '#ffffff',
+                    'disabled_fg': '#808080',
+                }
+            else:
+                # Use light theme colors or system defaults
+                self.colors = {
+                    'bg': base_bg if base_bg != 'SystemButtonFace' else '#ffffff',
+                    'fg': base_fg if base_fg != 'SystemButtonText' else '#000000',
+                    'select_bg': '#0078d4',
+                    'select_fg': '#ffffff',
+                    'button_bg': '#f0f0f0',
+                    'button_fg': '#000000',
+                    'insert_bg': '#000000',
+                    'disabled_fg': '#808080',
+                }
+            
+            # Set semantic colors based on theme
+            if self.is_dark_mode:
+                self.semantic_colors = {
+                    'error': '#f14c4c',
+                    'warning': '#ff8c00',
+                    'success': '#4ec9b0',
+                    'todo_pending': '#f14c4c',
+                    'todo_completed': '#808080',
+                    'todo_progress': '#ff8c00',
+                    'hashtag': '#569cd6',
+                    'bullet': '#cccccc',
+                }
+            else:
+                self.semantic_colors = {
+                    'error': '#d73a49',
+                    'warning': '#f66a0a',
+                    'success': '#28a745',
+                    'todo_pending': self.colors['fg'],
+                    'todo_completed': self.colors['disabled_fg'],
+                    'todo_progress': '#f66a0a',
+                    'hashtag': self.colors['select_bg'],
+                    'bullet': self.colors['fg'],
+                }
             
         except (tk.TclError, KeyError):
             # Fallback colors if system colors can't be extracted
@@ -762,6 +1076,57 @@ class SystemTheme:
                 'hashtag': '#0078d4',
                 'bullet': '#000000',
             }
+    
+    def _is_dark_color(self, color):
+        """Check if a color is dark (for dark mode detection)"""
+        try:
+            # First try platform-specific dark mode detection
+            import platform
+            system = platform.system()
+            
+            if system == "Darwin":  # macOS
+                try:
+                    import subprocess
+                    result = subprocess.run(['defaults', 'read', '-g', 'AppleInterfaceStyle'], 
+                                          capture_output=True, text=True)
+                    return result.returncode == 0 and 'Dark' in result.stdout
+                except:
+                    pass
+            elif system == "Windows":
+                try:
+                    import winreg
+                    registry_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, 
+                                                "SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize")
+                    value, _ = winreg.QueryValueEx(registry_key, "AppsUseLightTheme")
+                    winreg.CloseKey(registry_key)
+                    return value == 0
+                except:
+                    pass
+            elif system == "Linux":
+                try:
+                    import subprocess
+                    # Try GNOME
+                    result = subprocess.run(['gsettings', 'get', 'org.gnome.desktop.interface', 'gtk-theme'], 
+                                          capture_output=True, text=True)
+                    if result.returncode == 0:
+                        return 'dark' in result.stdout.lower()
+                except:
+                    pass
+            
+            # Fallback to color analysis
+            if color.startswith('#'):
+                # Parse hex color
+                color = color.lstrip('#')
+                r, g, b = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
+                # Calculate luminance
+                luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+                return luminance < 0.5
+            else:
+                # For named colors, use simple heuristics
+                dark_colors = ['black', 'darkgray', 'darkgrey', 'gray25', 'grey25']
+                return color.lower() in dark_colors
+        except:
+            return False  # Default to light mode if detection fails
     
     def get_color(self, color_name):
         """Get system color by name"""
@@ -1028,27 +1393,30 @@ class ModernSyntaxHighlighter:
         self.setup_tags()
     
     def setup_tags(self):
-        # Configure modern text styling
+        # Configure modern text styling using system fonts
+        system_font = self.system_theme.get_system_font('monospace')
+        bold_font = (*system_font[:2], 'bold')
+        
         self.text_widget.tag_config('todo_pending', 
             foreground=self.system_theme.get_color('todo_pending'), 
-            font=('JetBrains Mono', 12, 'bold'))
+            font=bold_font)
         
         self.text_widget.tag_config('todo_completed', 
             foreground=self.system_theme.get_color('todo_completed'), 
             overstrike=True,
-            font=('JetBrains Mono', 12))
+            font=system_font)
         
         self.text_widget.tag_config('todo_in_progress', 
             foreground=self.system_theme.get_color('todo_progress'), 
-            font=('JetBrains Mono', 12, 'bold'))
+            font=bold_font)
         
         self.text_widget.tag_config('hashtag', 
             foreground=self.system_theme.get_color('hashtag'), 
-            font=('JetBrains Mono', 12, 'bold'))
+            font=bold_font)
         
         self.text_widget.tag_config('bullet', 
             foreground=self.system_theme.get_color('bullet'),
-            font=('JetBrains Mono', 12, 'bold'))
+            font=bold_font)
         
         # Modern indentation with subtle guides
         for i in range(1, 8):
@@ -1137,6 +1505,164 @@ class ModernStatusBar(tk.Frame):
         )
         self.cursor_label.pack(side='right', fill='y')
 
+class TabBar(tk.Frame):
+    """VS Code-style tab bar for multiple files"""
+    
+    def __init__(self, parent, system_theme, on_tab_select=None, on_tab_close=None, on_new_tab=None):
+        super().__init__(parent, bg=system_theme.get_color('bg'), height=35)
+        self.system_theme = system_theme
+        self.on_tab_select = on_tab_select
+        self.on_tab_close = on_tab_close
+        self.on_new_tab = on_new_tab
+        self.pack_propagate(False)
+        
+        self.tabs = {}  # file_path -> tab_frame
+        self.active_tab = None
+        
+        # Scroll frame for tabs
+        self.scroll_frame = tk.Frame(self, bg=system_theme.get_color('bg'))
+        self.scroll_frame.pack(side='left', fill='both', expand=True)
+        
+        # New tab button
+        self.new_tab_button = tk.Label(
+            self,
+            text="+",
+            font=system_theme.get_system_font('default'),
+            fg=system_theme.get_color('disabled_fg'),
+            bg=system_theme.get_color('bg'),
+            width=3,
+            cursor="hand2"
+        )
+        self.new_tab_button.pack(side='right', pady=5, padx=5)
+        if self.on_new_tab:
+            self.new_tab_button.bind('<Button-1>', lambda e: self.on_new_tab())
+    
+    def add_tab(self, file_path, is_temporary=False):
+        """Add a new tab"""
+        if file_path in self.tabs:
+            self.select_tab(file_path)
+            return
+        
+        filename = os.path.basename(file_path) if file_path else "New File"
+        
+        # Create tab frame
+        tab_frame = tk.Frame(self.scroll_frame, bg=self.system_theme.get_color('bg'))
+        tab_frame.pack(side='left', fill='y', padx=1)
+        
+        # Tab label - make it more visible for debugging
+        font_style = 'italic' if is_temporary else 'normal'
+        tab_label = tk.Label(
+            tab_frame,
+            text=filename,
+            font=(self.system_theme.get_system_font('default')[0], 
+                  self.system_theme.get_system_font('default')[1], 
+                  font_style),
+            fg=self.system_theme.get_color('fg'),  # Use brighter foreground
+            bg=self.system_theme.get_color('select_bg'),  # Use distinct background
+            padx=12,
+            pady=8,
+            cursor="hand2",
+            relief='raised',  # Add border for visibility
+            bd=1
+        )
+        tab_label.pack(side='left')
+        
+        # Close button
+        close_button = tk.Label(
+            tab_frame,
+            text="×",
+            font=self.system_theme.get_system_font('default'),
+            fg=self.system_theme.get_color('disabled_fg'),
+            bg=self.system_theme.get_color('bg'),
+            width=2,
+            cursor="hand2"
+        )
+        close_button.pack(side='right')
+        
+        # Bind events
+        def select_handler(e):
+            self.select_tab(file_path)
+            if self.on_tab_select:
+                self.on_tab_select(file_path)
+        
+        def close_handler(e):
+            self.close_tab(file_path)
+            if self.on_tab_close:
+                self.on_tab_close(file_path)
+        
+        tab_label.bind('<Button-1>', select_handler)
+        close_button.bind('<Button-1>', close_handler)
+        
+        self.tabs[file_path] = {
+            'frame': tab_frame,
+            'label': tab_label,
+            'close': close_button,
+            'is_temporary': is_temporary
+        }
+        
+        self.select_tab(file_path)
+    
+    def select_tab(self, file_path):
+        """Select a tab and update visual state"""
+        # Deselect previous tab
+        if self.active_tab and self.active_tab in self.tabs:
+            tab = self.tabs[self.active_tab]
+            tab['label'].config(
+                bg=self.system_theme.get_color('bg'),
+                fg=self.system_theme.get_color('disabled_fg')
+            )
+            tab['close'].config(
+                bg=self.system_theme.get_color('bg'),
+                fg=self.system_theme.get_color('disabled_fg')
+            )
+        
+        # Select new tab
+        if file_path in self.tabs:
+            tab = self.tabs[file_path]
+            tab['label'].config(
+                bg=self.system_theme.get_color('select_bg'),
+                fg=self.system_theme.get_color('fg')
+            )
+            tab['close'].config(
+                bg=self.system_theme.get_color('select_bg'),
+                fg=self.system_theme.get_color('fg')
+            )
+            self.active_tab = file_path
+            
+            # Convert temporary tab to permanent if it becomes active
+            if tab['is_temporary'] and file_path:
+                tab['is_temporary'] = False
+                tab['label'].config(font=self.system_theme.get_system_font('default'))
+    
+    def close_tab(self, file_path):
+        """Close a tab"""
+        if file_path in self.tabs:
+            self.tabs[file_path]['frame'].destroy()
+            del self.tabs[file_path]
+            
+            # Select another tab if this was active
+            if self.active_tab == file_path:
+                self.active_tab = None
+                if self.tabs:
+                    # Select the last tab
+                    last_tab = list(self.tabs.keys())[-1]
+                    self.select_tab(last_tab)
+                    if self.on_tab_select:
+                        self.on_tab_select(last_tab)
+    
+    def update_tab_modified(self, file_path, is_modified):
+        """Update tab to show modified state"""
+        if file_path in self.tabs:
+            tab = self.tabs[file_path]
+            filename = os.path.basename(file_path) if file_path else "New File"
+            if is_modified:
+                filename = "● " + filename
+            tab['label'].config(text=filename)
+    
+    def get_active_tab(self):
+        """Get the currently active tab"""
+        return self.active_tab
+
 class ModernLogLogGUI:
     """Main GUI class with system theme integration"""
     
@@ -1145,6 +1671,11 @@ class ModernLogLogGUI:
         self.current_file = None
         self.file_modified = False
         self.auto_save_timer = None
+        
+        # Tab system
+        self.tabs = {}  # file_path -> tab_data
+        self.active_tab = None
+        self.tab_counter = 0
         
         self.setup_main_window()
         # Initialize system theme after window is created
@@ -1156,6 +1687,9 @@ class ModernLogLogGUI:
         self.setup_theme()
         
         self.update_recent_files_menu()
+        
+        # Create an initial tab so the tab bar is visible
+        self.new_file()
         
         if self.settings.get('auto_save'):
             self.schedule_auto_save()
@@ -1274,44 +1808,176 @@ class ModernLogLogGUI:
         editor_container = tk.Frame(self.main_paned, bg=self.system_theme.get_color('bg'))
         self.main_paned.add(editor_container, minsize=400)
         
-        # Editor header with modern styling
-        editor_header = tk.Frame(editor_container, bg=self.system_theme.get_color('bg'), height=50)
-        editor_header.pack(fill='x', padx=20, pady=(15, 0))
-        editor_header.pack_propagate(False)
-        
-        # File name with modern typography
-        self.file_label = tk.Label(
-            editor_header,
-            text="Untitled",
-            font=('Segoe UI', 14, 'bold'),
-            fg=self.system_theme.get_color('fg'),
-            bg=self.system_theme.get_color('bg')
+        # Tab bar
+        self.tab_bar = TabBar(
+            editor_container,
+            self.system_theme,
+            on_tab_select=self.on_tab_select,
+            on_tab_close=self.on_tab_close,
+            on_new_tab=self.new_file
         )
-        self.file_label.pack(side='left', anchor='w')
+        self.tab_bar.pack(fill='x', pady=(10, 0))
         
-        # Modified indicator
-        self.modified_label = tk.Label(
-            editor_header,
-            text="",
-            font=('Segoe UI', 14),
-            fg=self.system_theme.get_color('warning'),
-            bg=self.system_theme.get_color('bg')
-        )
-        self.modified_label.pack(side='left', padx=(10, 0), anchor='w')
+        # Editor container for content
+        self.editor_content_frame = tk.Frame(editor_container, bg=self.system_theme.get_color('bg'))
+        self.editor_content_frame.pack(fill='both', expand=True, padx=20, pady=(10, 20))
         
-        # Modern editor
-        editor_frame = tk.Frame(editor_container, bg=self.system_theme.get_color('bg'))
-        editor_frame.pack(fill='both', expand=True, padx=15, pady=(5, 15))
-        
-        # Replace text editor with tree renderer
+        # Create the tree renderer in the content frame
         self.tree_renderer = TreeRenderer(
-            editor_frame,
+            self.editor_content_frame,
             self.system_theme
         )
         self.tree_renderer.pack(fill='both', expand=True)
         
         # Connect tree renderer to GUI for change notifications
         self.tree_renderer.gui = self
+    
+    def on_tab_select(self, file_path):
+        """Handle tab selection with optimized performance"""
+        if file_path != self.current_file:
+            # Save current tab state efficiently
+            if self.current_file and self.current_file in self.tabs:
+                self._save_tab_state(self.current_file)
+            
+            # Load new tab with fast switching
+            self.current_file = file_path
+            if file_path in self.tabs:
+                self._load_tab_state(file_path)
+                
+                # Update title
+                filename = os.path.basename(file_path)
+                self.root.title(f"LogLog - {filename}")
+                self.file_modified = self.tabs[file_path].get('modified', False)
+    
+    def _save_tab_state(self, file_path):
+        """Efficiently save tab state without full tree serialization"""
+        if file_path in self.tabs:
+            # Cache the current tree content
+            self.tabs[file_path]['tree_state'] = self._get_clean_tree_content()
+            
+            # Cache selection and focus state for restoration
+            if hasattr(self.tree_renderer.tree, 'selection'):
+                focused_node = self.tree_renderer.tree.selection.focused_node
+                if focused_node:
+                    self.tabs[file_path]['focused_node_id'] = focused_node.id
+                
+                selected_nodes = self.tree_renderer.tree.selection.selected_nodes
+                if selected_nodes:
+                    self.tabs[file_path]['selected_node_ids'] = [n.id for n in selected_nodes]
+    
+    def _load_tab_state(self, file_path):
+        """Ultra-fast tab loading with viewport switching"""
+        tab_data = self.tabs[file_path]
+        
+        # Get content for the tab
+        tree_state = tab_data.get('tree_state')
+        if tree_state:
+            content = tree_state
+        else:
+            # Load from file (only if it exists on disk)
+            if os.path.exists(file_path):
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+            else:
+                # New file that hasn't been saved yet
+                content = ""
+        
+        # Instant viewport switch - no rendering delay
+        self.tree_renderer.switch_to_file(file_path, content)
+        
+        # Restore focus and selection state (optional, can be skipped for speed)
+        if 'focused_node_id' in tab_data or 'selected_node_ids' in tab_data:
+            self.root.after_idle(lambda: self._restore_tab_selection(tab_data))
+    
+    def _restore_tab_selection(self, tab_data):
+        """Restore selection and focus state for a tab"""
+        try:
+            # Restore focused node
+            if 'focused_node_id' in tab_data:
+                focused_id = tab_data['focused_node_id']
+                all_nodes = self.tree_renderer.tree.get_all_nodes()
+                for node in all_nodes:
+                    if node.id == focused_id:
+                        self.tree_renderer.set_focus(node)
+                        break
+            
+            # Restore selected nodes
+            if 'selected_node_ids' in tab_data:
+                selected_ids = set(tab_data['selected_node_ids'])
+                all_nodes = self.tree_renderer.tree.get_all_nodes()
+                for node in all_nodes:
+                    if node.id in selected_ids:
+                        self.tree_renderer.tree.selection.add_to_selection(node)
+                
+                self.tree_renderer.update_selection_display()
+        except Exception:
+            # If restoration fails, just continue without selection
+            pass
+    
+    def on_tab_close(self, file_path):
+        """Handle tab close"""
+        if file_path in self.tabs:
+            tab_data = self.tabs[file_path]
+            
+            # Check for unsaved changes
+            if tab_data.get('modified', False):
+                response = messagebox.askyesnocancel(
+                    "Unsaved Changes",
+                    f"Save changes to {os.path.basename(file_path)}?"
+                )
+                if response is True:  # Save
+                    self.save_tab(file_path)
+                elif response is None:  # Cancel
+                    return False
+            
+            # Remove tab
+            del self.tabs[file_path]
+            
+            # Remove viewport and handle tab switching
+            self.tree_renderer.remove_viewport(file_path)
+            
+            # If this was the current file, switch to another tab or clear
+            if file_path == self.current_file:
+                self.current_file = None
+                if self.tabs:
+                    # Switch to last tab
+                    last_tab = list(self.tabs.keys())[-1]
+                    self.on_tab_select(last_tab)
+                else:
+                    # No tabs left - switch to empty viewport
+                    self.tree_renderer.switch_to_file("", "")
+                    self.root.title("LogLog")
+                    self.file_modified = False
+            
+            return True
+    
+    def save_tab(self, file_path):
+        """Save a specific tab"""
+        if file_path in self.tabs:
+            # Get content from tree
+            content = self.tabs[file_path].get('tree_state', '')
+            if file_path == self.current_file:
+                content = self.tree_renderer.tree.serialize()
+            
+            # Write to file
+            try:
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(content)
+                
+                # Update tab state
+                self.tabs[file_path]['modified'] = False
+                self.tab_bar.update_tab_modified(file_path, False)
+                
+                if file_path == self.current_file:
+                    self.file_modified = False
+                    self.update_title()
+                
+                return True
+            except Exception as e:
+                messagebox.showerror("Error", f"Could not save file: {e}")
+                return False
+        
+        return False
         
         # Keep text_editor reference for compatibility, but make it point to tree renderer
         self.text_editor = self.tree_renderer
@@ -1336,6 +2002,11 @@ class ModernLogLogGUI:
             ('<Control-f>', self.show_find),
             ('<Control-Shift-F>', self.show_scoped_find),
             ('<Control-Shift-P>', self.show_command_palette),
+            # Tab management shortcuts
+            ('<Control-t>', self.new_tab),
+            ('<Control-w>', self.close_current_tab),
+            ('<Control-Tab>', self.next_tab),
+            ('<Control-Shift-Tab>', self.prev_tab),
             # Theme toggling removed - using system theme
             ('<Control-plus>', self.zoom_in),
             ('<Control-minus>', self.zoom_out),
@@ -1344,6 +2015,41 @@ class ModernLogLogGUI:
         
         for binding, command in bindings:
             self.root.bind(binding, lambda e, cmd=command: cmd())
+    
+    def new_tab(self):
+        """Create a new tab"""
+        self.new_file()
+    
+    def close_current_tab(self):
+        """Close the current tab"""
+        if self.current_file:
+            self.tab_bar.close_tab(self.current_file)
+    
+    def next_tab(self):
+        """Switch to next tab"""
+        tab_keys = list(self.tabs.keys())
+        if len(tab_keys) <= 1:
+            return
+            
+        current_index = tab_keys.index(self.current_file) if self.current_file in tab_keys else 0
+        next_index = (current_index + 1) % len(tab_keys)
+        next_file = tab_keys[next_index]
+        
+        self.tab_bar.select_tab(next_file)
+        self.on_tab_select(next_file)
+    
+    def prev_tab(self):
+        """Switch to previous tab"""
+        tab_keys = list(self.tabs.keys())
+        if len(tab_keys) <= 1:
+            return
+            
+        current_index = tab_keys.index(self.current_file) if self.current_file in tab_keys else 0
+        prev_index = (current_index - 1) % len(tab_keys)
+        prev_file = tab_keys[prev_index]
+        
+        self.tab_bar.select_tab(prev_file)
+        self.on_tab_select(prev_file)
         
         # Tree renderer handles its own events
     
@@ -1438,20 +2144,64 @@ class ModernLogLogGUI:
     
     # File operations (same as before but with modern status updates)
     def new_file(self):
-        if self.check_unsaved_changes():
-            self.current_file = None
-            self.file_modified = False
-            # Create a new empty tree
-            self.tree_renderer.load_from_text("")
-            self.update_title()
-            self.update_status("📄 New file created")
+        """Create a new file in a new tab"""
+        # Generate unique name for new file
+        new_file_name = f"Untitled-{self.tab_counter}.log"
+        self.tab_counter += 1
+        
+        # Create new tab
+        self.tabs[new_file_name] = {
+            'tree_state': "",
+            'modified': False,
+            'is_temporary': False
+        }
+        
+        # Add tab to tab bar
+        self.tab_bar.add_tab(new_file_name, False)
+        
+        # Set as current file and switch to new viewport
+        self.current_file = new_file_name
+        self.file_modified = False
+        
+        # Use the new viewport system to create an empty file
+        self.tree_renderer.switch_to_file(new_file_name, "")
+        
+        # Save the empty state
+        self.tabs[new_file_name]['tree_state'] = ""
+        
+        self.update_title()
+        self.update_status("📄 New file created")
     
-    def load_file(self, file_path: str):
+    def load_file(self, file_path: str, is_temporary=False):
+        """Load file into a new tab or switch to existing tab"""
         try:
-            # Load file using tree renderer
+            # Check if file is already open in a tab
+            if file_path in self.tabs:
+                # Switch to existing tab
+                self.tab_bar.select_tab(file_path)
+                self.on_tab_select(file_path)
+                return
+            
+            # Create new tab
+            self.tabs[file_path] = {
+                'tree_state': None,
+                'modified': False,
+                'is_temporary': is_temporary
+            }
+            
+            # Add tab to tab bar
+            self.tab_bar.add_tab(file_path, is_temporary)
+            
+            # Load file content
             if self.tree_renderer.load_from_file(file_path):
                 self.current_file = file_path
                 self.file_modified = False
+                
+                # Save the original file content as the tab's tree state (not serialized)
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    original_content = f.read()
+                self.tabs[file_path]['tree_state'] = original_content
+                
                 self.update_title()
                 self.add_to_recent_files(file_path)
                 self.update_status(f"📂 Opened {os.path.basename(file_path)}")
@@ -1459,6 +2209,10 @@ class ModernLogLogGUI:
                 raise Exception("Failed to load file into tree")
             
         except Exception as e:
+            # Clean up failed tab
+            if file_path in self.tabs:
+                del self.tabs[file_path]
+                self.tab_bar.close_tab(file_path)
             self.show_modern_error("Failed to open file", str(e))
     
     def save_file(self):
@@ -1467,6 +2221,12 @@ class ModernLogLogGUI:
                 # Save using tree renderer
                 if self.tree_renderer.save_to_file(self.current_file):
                     self.file_modified = False
+                    
+                    # Update tab state
+                    if self.current_file in self.tabs:
+                        self.tabs[self.current_file]['modified'] = False
+                        self.tab_bar.update_tab_modified(self.current_file, False)
+                    
                     self.update_title()
                     self.update_status(f"💾 Saved {os.path.basename(self.current_file)}")
                 else:
@@ -1482,35 +2242,31 @@ class ModernLogLogGUI:
         if self.current_file:
             filename = os.path.basename(self.current_file)
             title = f"{filename} - LogLog"
-            self.file_label.config(text=filename)
-        else:
-            self.file_label.config(text="Untitled")
         
         if self.file_modified:
             title = "● " + title
-            self.modified_label.config(text="●")
-        else:
-            self.modified_label.config(text="")
         
         self.root.title(title)
     
     def update_status(self, message: str):
-        self.status_bar.status_label.config(text=message)
-        self.root.after(3000, lambda: self.status_bar.status_label.config(text="Ready"))
+        if hasattr(self, 'status_bar') and self.status_bar:
+            self.status_bar.status_label.config(text=message)
+            self.root.after(3000, lambda: self.status_bar.status_label.config(text="Ready"))
     
     def update_cursor_position(self, event=None):
         # For tree renderer, show focused node info
         focused_node = self.tree_renderer.tree.selection.focused_node
-        if focused_node:
-            node_count = len(self.tree_renderer.tree.get_visible_nodes())
-            visible_nodes = self.tree_renderer.tree.get_visible_nodes()
-            try:
-                node_index = visible_nodes.index(focused_node) + 1
-                self.status_bar.cursor_label.config(text=f"Node {node_index} of {node_count}")
-            except ValueError:
-                self.status_bar.cursor_label.config(text=f"{node_count} nodes")
-        else:
-            self.status_bar.cursor_label.config(text="No selection")
+        if hasattr(self, 'status_bar') and self.status_bar:
+            if focused_node:
+                node_count = len(self.tree_renderer.tree.get_visible_nodes())
+                visible_nodes = self.tree_renderer.tree.get_visible_nodes()
+                try:
+                    node_index = visible_nodes.index(focused_node) + 1
+                    self.status_bar.cursor_label.config(text=f"Node {node_index} of {node_count}")
+                except ValueError:
+                    self.status_bar.cursor_label.config(text=f"{node_count} nodes")
+            else:
+                self.status_bar.cursor_label.config(text="No selection")
     
     def show_modern_error(self, title, message):
         """Modern error dialog"""
@@ -1549,13 +2305,48 @@ class ModernLogLogGUI:
     def on_text_modified(self, event=None):
         if not self.file_modified:
             self.file_modified = True
+            # Update tab to show modified state
+            if self.current_file and self.current_file in self.tabs:
+                self.tabs[self.current_file]['modified'] = True
+                self.tab_bar.update_tab_modified(self.current_file, True)
             self.update_title()
+        
+        # Save current tree state to the active tab
+        if self.current_file and self.current_file in self.tabs:
+            self.tabs[self.current_file]['tree_state'] = self._get_clean_tree_content()
         
         # Update cursor position display
         self.update_cursor_position()
         
         if self.settings.get('auto_save'):
             self.schedule_auto_save()
+    
+    def _get_clean_tree_content(self):
+        """Get tree content without the empty root node that serialize() adds"""
+        try:
+            # Use the new viewport system to get content
+            content = self.tree_renderer.get_content()
+            if not content:
+                return ""
+            
+            serialized = content
+            
+            # If it starts with "- \n    " (empty root + indent), remove that prefix
+            if serialized.startswith('- \n    '):
+                # Remove the empty root line and reduce indentation
+                lines = serialized.split('\n')
+                clean_lines = []
+                for line in lines[1:]:  # Skip first empty root line
+                    if line.startswith('    '):  # Remove one level of indentation
+                        clean_lines.append(line[4:])
+                    else:
+                        clean_lines.append(line)
+                return '\n'.join(clean_lines)
+            else:
+                return serialized
+        except:
+            # Fallback to original serialization
+            return self.tree_renderer.tree.serialize()
     
     # Additional methods would go here (save_as_file, open_file, show_find, etc.)
     # For brevity, I'll implement key ones...
@@ -1943,6 +2734,10 @@ def main():
     """Launch the modern LogLog GUI"""
     app = ModernLogLogGUI()
     app.root.mainloop()
+
+# Compatibility aliases for backward compatibility
+LogLogGUI = ModernLogLogGUI
+LogLogSyntaxHighlighter = ModernSyntaxHighlighter
 
 if __name__ == '__main__':
     main()

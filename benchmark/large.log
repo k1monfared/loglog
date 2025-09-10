@@ -1,0 +1,200 @@
+[x] Completed item #0.0 #feature
+    [] TODO item #1.0 
+        - Regular list item #2.0 #feature
+            [x] Completed item #3.0 
+                [-] In progress item #4.0 
+                    - Regular list item #5.0 #later
+                    [?] Unknown status item #5.1 
+                    [x] Completed item #5.2 
+                    [] TODO item #5.3 
+                [] TODO item #4.1 
+                [-] In progress item #4.2 
+                    [-] In progress item #11.0 
+                    [] TODO item #11.1 #project
+                [-] In progress item #4.3 
+                    [] TODO item #14.0 
+                    - Regular list item #14.1 
+                    [] TODO item #14.2 
+                    [x] Completed item #14.3 #docs
+                    [?] Unknown status item #14.4 
+                - Regular list item #4.4 
+                    [?] Unknown status item #20.0 
+                [?] Unknown status item #4.5 
+                    [-] In progress item #22.0 
+                [x] Completed item #4.6 
+                [-] In progress item #4.7 
+                    [-] In progress item #25.0 
+                    [] TODO item #25.1 
+                    [x] Completed item #25.2 
+                    [-] In progress item #25.3 
+                    - Regular list item #25.4 
+            - Regular list item #3.1 
+                - Regular list item #31.0 
+                    [?] Unknown status item #32.0 #docs
+                    - Regular list item #32.1 #later
+                    [x] Completed item #32.2 
+                    - Regular list item #32.3 
+                    [?] Unknown status item #32.4 
+                    [x] Completed item #32.5 
+            [] TODO item #3.2 
+                - Regular list item #39.0 
+                [] TODO item #39.1 
+                    [] TODO item #41.0 
+                [?] Unknown status item #39.2 
+                    - Regular list item #43.0 #later
+                    [-] In progress item #43.1 
+                    - Regular list item #43.2 
+                    [] TODO item #43.3 
+                    [] TODO item #43.4 #project
+            [?] Unknown status item #3.3 
+                [-] In progress item #49.0 
+                    [x] Completed item #50.0 
+                    [-] In progress item #50.1 
+                    [x] Completed item #50.2 
+                    [x] Completed item #50.3 #bug
+                    [-] In progress item #50.4 #urgent
+                    [?] Unknown status item #50.5 
+                    [?] Unknown status item #50.6 #later
+                    - Regular list item #50.7 
+                [] TODO item #49.1 
+                    [x] Completed item #59.0 
+                    [] TODO item #59.1 
+                    [x] Completed item #59.2 
+                    [x] Completed item #59.3 
+                    [] TODO item #59.4 
+                    [-] In progress item #59.5 
+                    [x] Completed item #59.6 
+                    [x] Completed item #59.7 #feature
+                [?] Unknown status item #49.2 
+            [-] In progress item #3.4 
+                [x] Completed item #69.0 
+                [x] Completed item #69.1 
+                    [x] Completed item #71.0 
+                    [?] Unknown status item #71.1 
+                    [x] Completed item #71.2 
+                    [] TODO item #71.3 
+                    [] TODO item #71.4 
+                    [] TODO item #71.5 
+                [] TODO item #69.2 #urgent
+            [x] Completed item #3.5 
+                [?] Unknown status item #79.0 
+                    [?] Unknown status item #80.0 
+                    - Regular list item #80.1 
+                    [?] Unknown status item #80.2 
+                    [] TODO item #80.3 
+                    [x] Completed item #80.4 
+                    [?] Unknown status item #80.5 
+                    [-] In progress item #80.6 
+                    [x] Completed item #80.7 
+                [?] Unknown status item #79.1 
+                    [x] Completed item #89.0 #bug
+                    [?] Unknown status item #89.1 
+                [-] In progress item #79.2 
+                - Regular list item #79.3 #feature
+                    [-] In progress item #93.0 
+                    [x] Completed item #93.1 
+                [?] Unknown status item #79.4 
+                    [?] Unknown status item #96.0 
+                    [x] Completed item #96.1 
+                    [?] Unknown status item #96.2 #feature
+                    [?] Unknown status item #96.3 
+                    - Regular list item #96.4 
+                    [-] In progress item #96.5 
+                    [?] Unknown status item #96.6 
+                    [x] Completed item #96.7 
+                [?] Unknown status item #79.5 
+                    [-] In progress item #105.0 
+                    [-] In progress item #105.1 #docs
+                    - Regular list item #105.2 
+                    [x] Completed item #105.3 
+            [?] Unknown status item #3.6 
+                [-] In progress item #110.0 
+            [x] Completed item #3.7 #feature
+        [?] Unknown status item #2.1 
+            [] TODO item #113.0 #later
+        - Regular list item #2.2 
+        [?] Unknown status item #2.3 #later
+            - Regular list item #116.0 
+                [x] Completed item #117.0 
+                    [] TODO item #118.0 
+                    [?] Unknown status item #118.1 
+                    [-] In progress item #118.2 
+                    [x] Completed item #118.3 
+                    [?] Unknown status item #118.4 
+                    [?] Unknown status item #118.5 
+                    - Regular list item #118.6 
+                    [x] Completed item #118.7 
+                [-] In progress item #117.1 
+                [?] Unknown status item #117.2 
+            - Regular list item #116.1 
+            - Regular list item #116.2 
+                - Regular list item #130.0 #bug
+                [-] In progress item #130.1 #later
+                    [-] In progress item #132.0 
+                    [x] Completed item #132.1 
+                [?] Unknown status item #130.2 
+            - Regular list item #116.3 
+            [x] Completed item #116.4 
+                - Regular list item #137.0 
+                    [x] Completed item #138.0 #project
+        [x] Completed item #2.4 
+            - Regular list item #140.0 
+                [x] Completed item #141.0 
+                    [?] Unknown status item #142.0 #bug
+                    [] TODO item #142.1 #later
+                    [?] Unknown status item #142.2 
+                    - Regular list item #142.3 #urgent
+                    [?] Unknown status item #142.4 #later
+                    [-] In progress item #142.5 #project
+                [] TODO item #141.1 
+                    [-] In progress item #149.0 
+                    [x] Completed item #149.1 
+                    - Regular list item #149.2 
+                    [-] In progress item #149.3 
+                [] TODO item #141.2 
+                    [] TODO item #154.0 #bug
+                    - Regular list item #154.1 
+                [] TODO item #141.3 #later
+                    [-] In progress item #157.0 
+                    [x] Completed item #157.1 
+                    [x] Completed item #157.2 
+                    [?] Unknown status item #157.3 
+                    [] TODO item #157.4 
+                    [x] Completed item #157.5 
+                    [-] In progress item #157.6 
+                [] TODO item #141.4 
+                [] TODO item #141.5 #urgent
+                    [?] Unknown status item #166.0 
+                [?] Unknown status item #141.6 #later
+            [-] In progress item #140.1 
+                [?] Unknown status item #169.0 #later
+                    [-] In progress item #170.0 
+                    [?] Unknown status item #170.1 
+                - Regular list item #169.1 
+                    [-] In progress item #173.0 
+                [?] Unknown status item #169.2 
+                    - Regular list item #175.0 #later
+                    [-] In progress item #175.1 
+                    [-] In progress item #175.2 
+                    [-] In progress item #175.3 
+                    - Regular list item #175.4 
+                    [?] Unknown status item #175.5 
+                    [?] Unknown status item #175.6 
+                [-] In progress item #169.3 
+                [] TODO item #169.4 
+                    [x] Completed item #184.0 #docs
+                    [] TODO item #184.1 #bug
+                    [x] Completed item #184.2 
+                    [?] Unknown status item #184.3 #later
+                    - Regular list item #184.4 
+                [x] Completed item #169.5 #feature
+                [-] In progress item #169.6 #later
+                [] TODO item #169.7 
+            [?] Unknown status item #140.2 
+                [] TODO item #193.0 #bug
+                    [?] Unknown status item #194.0 
+                    - Regular list item #194.1 
+                [x] Completed item #193.1 
+                    [-] In progress item #197.0 
+                    [?] Unknown status item #197.1 #bug
+                    [?] Unknown status item #197.2 

@@ -7,6 +7,7 @@ A modern, sleek desktop GUI inspired by Obsidian, Sublime Text, and Notion.
 import os
 import sys
 import json
+import time
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox
 from tkinter.scrolledtext import ScrolledText
@@ -158,6 +159,9 @@ class TreeNodeWidget(tk.Frame):
                 # Ctrl+Click: Toggle individual selection
                 self.tree_renderer.tree.selection.toggle_selection(self.node)
                 self.tree_renderer.update_selection_display()
+            elif event.state & 0x1:  # Shift key held
+                # Shift+Click: Select range from focused node to this node
+                self._handle_shift_click()
             else:
                 # Regular click: Set focus and clear other selections
                 self.tree_renderer.set_focus(self.node)
@@ -179,7 +183,16 @@ class TreeNodeWidget(tk.Frame):
         # Checkbox click to cycle TODO status
         def on_checkbox_click(event):
             if self.node.todo_status is not None:
+                # Record action for undo/redo
+                old_status = self.node.todo_status
                 self.node.cycle_todo_status()
+                if hasattr(self.tree_renderer, 'record_action'):
+                    self.tree_renderer.record_action(
+                        'todo_status',
+                        node_id=self.node.id,
+                        old_status=old_status,
+                        new_status=self.node.todo_status
+                    )
                 self.update_from_node()
             return "break"
         
@@ -190,6 +203,39 @@ class TreeNodeWidget(tk.Frame):
         
         self.triangle_label.bind("<Button-1>", on_triangle_click)
         self.checkbox_label.bind("<Button-1>", on_checkbox_click)
+    
+    def _handle_shift_click(self):
+        """Handle shift+click for range selection"""
+        if not self.tree_renderer.active_viewport:
+            return
+            
+        selection = self.tree_renderer.active_viewport.tree.selection
+        focused_node = selection.focused_node
+        
+        if not focused_node:
+            # No focused node, just focus this one
+            self.tree_renderer.set_focus(self.node)
+            return
+        
+        # Get visible nodes to determine selection range
+        visible_nodes = self.tree_renderer.active_viewport.tree.get_visible_nodes()
+        
+        if focused_node in visible_nodes and self.node in visible_nodes:
+            start_idx = visible_nodes.index(focused_node)
+            end_idx = visible_nodes.index(self.node)
+            
+            # Ensure start <= end
+            if start_idx > end_idx:
+                start_idx, end_idx = end_idx, start_idx
+            
+            # Clear current selection and select range
+            selection.clear_selection()
+            for i in range(start_idx, end_idx + 1):
+                selection.add_to_selection(visible_nodes[i])
+            
+            # Keep focus on the clicked node
+            selection.set_focus(self.node)
+            self.tree_renderer.update_selection_display()
     
     def start_editing(self):
         """Enter edit mode for this node"""
@@ -209,7 +255,17 @@ class TreeNodeWidget(tk.Frame):
         
         # Bind edit events
         def on_enter(event):
-            self.finish_editing(save=True)
+            # Check if cursor is at end of text
+            cursor_pos = self.edit_entry.index(tk.INSERT)
+            text_length = len(self.edit_entry.get())
+            
+            if cursor_pos == text_length:
+                # Cursor at end - create new sibling node
+                self.finish_editing(save=True)
+                self._create_new_sibling()
+            else:
+                # Cursor not at end - just finish editing
+                self.finish_editing(save=True)
             return "break"
             
         def on_escape(event):
@@ -228,6 +284,15 @@ class TreeNodeWidget(tk.Frame):
         if save:
             # Update node content
             new_content = self.edit_entry.get().strip()
+            if new_content != self.node.content:
+                # Record action for undo/redo
+                if hasattr(self.tree_renderer, 'record_action'):
+                    self.tree_renderer.record_action(
+                        'edit_node',
+                        node_id=self.node.id,
+                        old_content=self.node.content,
+                        new_content=new_content
+                    )
             self.node.content = new_content
             
             # Re-parse TODO status if needed
@@ -242,6 +307,56 @@ class TreeNodeWidget(tk.Frame):
         
         # Notify tree renderer of change
         self.tree_renderer.on_node_modified(self.node)
+    
+    def _create_new_sibling(self):
+        """Create a new sibling node after the current node"""
+        try:
+            # Import the TreeNode class
+            from loglog import TreeNode
+            
+            # Create new sibling node with same depth
+            new_node = TreeNode("", self.node.depth)
+            
+            # Add it after current node
+            if self.node.parent:
+                parent = self.node.parent
+                current_index = parent.children.index(self.node)
+                parent.children.insert(current_index + 1, new_node)
+                new_node.parent = parent
+            else:
+                # Handle root level nodes - add to the tree root
+                if hasattr(self.tree_renderer, 'tree') and hasattr(self.tree_renderer.tree, 'root'):
+                    tree_root = self.tree_renderer.tree.root
+                    if self.node in tree_root.children:
+                        current_index = tree_root.children.index(self.node)
+                        tree_root.children.insert(current_index + 1, new_node)
+                        new_node.parent = tree_root
+            
+            # Mark file as modified
+            if hasattr(self.tree_renderer, 'on_node_modified'):
+                self.tree_renderer.on_node_modified(new_node)
+            
+            # Refresh display and focus new node
+            self.tree_renderer.refresh_display()
+            
+            # Focus and start editing the new node
+            if hasattr(self.tree_renderer, 'set_focus'):
+                self.tree_renderer.set_focus(new_node)
+                # Use after_idle to ensure the widget is created before editing
+                self.after_idle(lambda: self._start_editing_new_node(new_node))
+            
+        except Exception as e:
+            print(f"Error creating sibling: {e}")
+    
+    def _start_editing_new_node(self, new_node):
+        """Start editing a newly created node"""
+        try:
+            # Find the viewport and widget for the new node
+            if hasattr(self.tree_renderer, 'node_widgets') and new_node.id in self.tree_renderer.node_widgets:
+                widget = self.tree_renderer.node_widgets[new_node.id]
+                widget.start_editing()
+        except Exception as e:
+            print(f"Error starting edit on new node: {e}")
 
 class TabViewport(tk.Frame):
     """Persistent viewport for a single tab's tree content - industry standard approach"""
@@ -250,10 +365,16 @@ class TabViewport(tk.Frame):
         super().__init__(parent, bg=system_theme.get_color('bg'))
         self.system_theme = system_theme
         self.file_path = file_path
+        self.parent_tree_renderer = None  # Will be set by TreeRenderer
         self.tree = LogLogTree()
         self.node_widgets = {}  # node_id -> TreeNodeWidget mapping
         self.node_positions = {}  # node_id -> y_position for efficient positioning
         self.visible_nodes_cache = []  # Cache for visible nodes
+        
+        # Undo/Redo system
+        self.undo_stack = []  # Stack of actions that can be undone
+        self.redo_stack = []  # Stack of actions that can be redone
+        self.max_undo_stack = 50  # Limit undo stack size
         
         # Performance optimization flags
         self._position_update_pending = False
@@ -382,6 +503,203 @@ class TabViewport(tk.Frame):
         """Handle node fold toggle with minimal impact"""
         # Only update affected part of the tree
         self.refresh_display()
+    
+    # Delegation methods for TreeNodeWidget compatibility
+    def set_focus(self, node):
+        """Delegate focus setting to parent TreeRenderer"""
+        if self.parent_tree_renderer:
+            self.parent_tree_renderer.set_focus(node)
+        else:
+            # Fallback: set focus on tree selection directly
+            self.tree.selection.set_focus(node)
+    
+    def update_selection_display(self):
+        """Delegate selection display update to parent TreeRenderer"""
+        if self.parent_tree_renderer:
+            self.parent_tree_renderer.update_selection_display()
+        else:
+            # Fallback: refresh display
+            self.refresh_display()
+    
+    def on_node_modified(self, node):
+        """Handle node modification"""
+        if self.parent_tree_renderer and hasattr(self.parent_tree_renderer, 'gui'):
+            # Notify GUI of changes
+            gui = self.parent_tree_renderer.gui
+            if hasattr(gui, 'mark_file_modified'):
+                gui.mark_file_modified()
+        # Refresh the display to show changes
+        self.refresh_display()
+    
+    @property
+    def active_viewport(self):
+        """Return self for compatibility with TreeNodeWidget"""
+        return self
+    
+    def record_action(self, action_type, **kwargs):
+        """Record an action for undo/redo"""
+        action = {
+            'type': action_type,
+            'timestamp': time.time(),
+            **kwargs
+        }
+        
+        # Add to undo stack
+        self.undo_stack.append(action)
+        
+        # Clear redo stack (new action invalidates redo)
+        self.redo_stack.clear()
+        
+        # Limit stack size
+        if len(self.undo_stack) > self.max_undo_stack:
+            self.undo_stack.pop(0)
+    
+    def undo_action(self):
+        """Undo the last action"""
+        if not self.undo_stack:
+            return False
+        
+        action = self.undo_stack.pop()
+        
+        try:
+            if action['type'] == 'edit_node':
+                # Undo node content change
+                node_id = action['node_id']
+                old_content = action['old_content']
+                
+                # Find the node and restore content
+                for node in self.tree.get_all_nodes():
+                    if node.id == node_id:
+                        # Record current state for redo
+                        redo_action = {
+                            'type': 'edit_node',
+                            'node_id': node_id,
+                            'old_content': node.content,
+                            'new_content': old_content
+                        }
+                        self.redo_stack.append(redo_action)
+                        
+                        # Apply undo
+                        node.content = old_content
+                        self.refresh_display()
+                        return True
+            
+            elif action['type'] == 'todo_status':
+                # Undo TODO status change
+                node_id = action['node_id']
+                old_status = action['old_status']
+                
+                for node in self.tree.get_all_nodes():
+                    if node.id == node_id:
+                        # Record current state for redo
+                        redo_action = {
+                            'type': 'todo_status',
+                            'node_id': node_id,
+                            'old_status': node.todo_status,
+                            'new_status': old_status
+                        }
+                        self.redo_stack.append(redo_action)
+                        
+                        # Apply undo
+                        node.set_todo_status(old_status)
+                        self.refresh_display()
+                        return True
+            
+            elif action['type'] == 'add_node':
+                # Undo node addition (remove the node)
+                node_id = action['node_id']
+                
+                for node in self.tree.get_all_nodes():
+                    if node.id == node_id:
+                        # Record node data for redo
+                        redo_action = {
+                            'type': 'remove_node',
+                            'node_data': {
+                                'id': node.id,
+                                'content': node.content,
+                                'depth': node.depth,
+                                'todo_status': node.todo_status,
+                                'parent_id': node.parent.id if node.parent else None,
+                                'position': node.parent.children.index(node) if node.parent else 0
+                            }
+                        }
+                        self.redo_stack.append(redo_action)
+                        
+                        # Remove the node
+                        if node.parent:
+                            node.parent.children.remove(node)
+                        self.refresh_display()
+                        return True
+            
+            # Add action back to undo stack if it couldn't be processed
+            self.undo_stack.append(action)
+            return False
+            
+        except Exception as e:
+            print(f"Undo error: {e}")
+            # Put action back on stack
+            self.undo_stack.append(action)
+            return False
+    
+    def redo_action(self):
+        """Redo the last undone action"""
+        if not self.redo_stack:
+            return False
+        
+        action = self.redo_stack.pop()
+        
+        try:
+            if action['type'] == 'edit_node':
+                # Redo node content change
+                node_id = action['node_id']
+                new_content = action['new_content']
+                
+                for node in self.tree.get_all_nodes():
+                    if node.id == node_id:
+                        # Record current state for undo
+                        undo_action = {
+                            'type': 'edit_node',
+                            'node_id': node_id,
+                            'old_content': node.content,
+                            'new_content': new_content
+                        }
+                        self.undo_stack.append(undo_action)
+                        
+                        # Apply redo
+                        node.content = new_content
+                        self.refresh_display()
+                        return True
+            
+            elif action['type'] == 'todo_status':
+                # Redo TODO status change
+                node_id = action['node_id']
+                new_status = action['new_status']
+                
+                for node in self.tree.get_all_nodes():
+                    if node.id == node_id:
+                        # Record current state for undo
+                        undo_action = {
+                            'type': 'todo_status',
+                            'node_id': node_id,
+                            'old_status': node.todo_status,
+                            'new_status': new_status
+                        }
+                        self.undo_stack.append(undo_action)
+                        
+                        # Apply redo
+                        node.set_todo_status(new_status)
+                        self.refresh_display()
+                        return True
+            
+            # Add action back to redo stack if it couldn't be processed
+            self.redo_stack.append(action)
+            return False
+            
+        except Exception as e:
+            print(f"Redo error: {e}")
+            # Put action back on stack
+            self.redo_stack.append(action)
+            return False
 
 class TreeRenderer(tk.Frame):
     """Multi-tab tree renderer with viewport management - industry standard approach"""
@@ -402,11 +720,16 @@ class TreeRenderer(tk.Frame):
         # Bind keyboard events to the renderer (will delegate to active viewport)
         self.focus_set()
         self.bind_keyboard_events()
+        
+        # Make this widget focusable and ensure it captures focus when clicked
+        self.bind("<Button-1>", self._on_click_focus)
+        self.bind("<FocusIn>", self._on_focus_in)
     
     def get_or_create_viewport(self, file_path):
         """Get existing viewport or create new one for file"""
         if file_path not in self.viewports:
             viewport = TabViewport(self.viewport_container, self.system_theme, file_path)
+            viewport.parent_tree_renderer = self  # Set parent reference
             self.viewports[file_path] = viewport
         return self.viewports[file_path]
     
@@ -573,9 +896,33 @@ class TreeRenderer(tk.Frame):
         def on_key(event):
             return self.handle_keyboard_event(event)
         
-        # Make sure this widget can receive focus
+        # Make sure this widget can receive focus and capture all keyboard events
         self.bind("<Button-1>", lambda e: self.focus_set())
         self.bind("<Key>", on_key)
+        self.bind("<KeyPress>", on_key)
+        self.bind("<KeyRelease>", lambda e: None)  # Prevent event propagation
+        
+        # Focus on content when widget is shown
+        self.bind("<Map>", lambda e: self.after_idle(self.focus_set))
+    
+    def _on_click_focus(self, event):
+        """Handle clicks to ensure proper focus"""
+        self.focus_set()
+        # Ensure the active viewport also gets focus
+        if self.active_viewport:
+            self.active_viewport.focus_set()
+        return "break"  # Prevent event propagation
+    
+    def _on_focus_in(self, event):
+        """Handle focus events"""
+        # Ensure the active viewport also gets focus
+        if self.active_viewport:
+            self.active_viewport.focus_set()
+            # Set initial focus to first visible node if none selected
+            if not self.active_viewport.tree.selection.focused_node:
+                visible_nodes = self.active_viewport.tree.get_visible_nodes()
+                if visible_nodes:
+                    self.set_focus(visible_nodes[0])
     
     def load_from_file(self, file_path):
         """Load LogLog file into tree and render"""
@@ -737,10 +1084,24 @@ class TreeRenderer(tk.Frame):
         elif event.keysym == "space":
             self.toggle_todo_status()
         elif event.char == "?" and focused_node.todo_status:
+            old_status = focused_node.todo_status
             focused_node.set_todo_status("unknown")
+            self.record_action(
+                'todo_status',
+                node_id=focused_node.id,
+                old_status=old_status,
+                new_status=focused_node.todo_status
+            )
             self.update_selection_display()
         elif event.char == "-" and focused_node.todo_status:
+            old_status = focused_node.todo_status
             focused_node.set_todo_status("progress")
+            self.record_action(
+                'todo_status',
+                node_id=focused_node.id,
+                old_status=old_status,
+                new_status=focused_node.todo_status
+            )
             self.update_selection_display()
         elif event.keysym in ["1", "2", "3", "4", "5", "6", "7", "8", "9"] and (event.state & 0x4):  # Ctrl key
             level = int(event.keysym)
@@ -820,7 +1181,15 @@ class TreeRenderer(tk.Frame):
         
         # Apply operation to all selected nodes
         for node in selected_nodes:
+            old_status = node.todo_status
             node.cycle_todo_status()
+            # Record action for undo/redo
+            self.record_action(
+                'todo_status',
+                node_id=node.id,
+                old_status=old_status,
+                new_status=node.todo_status
+            )
         
         self.update_selection_display()
     
@@ -1591,6 +1960,8 @@ class TabBar(tk.Frame):
                 self.on_tab_close(file_path)
         
         tab_label.bind('<Button-1>', select_handler)
+        tab_label.bind('<Button-2>', close_handler)  # Middle-click to close
+        tab_label.bind('<Double-Button-1>', lambda e: self.make_tab_permanent(file_path))  # Double-click to pin
         close_button.bind('<Button-1>', close_handler)
         
         self.tabs[file_path] = {
@@ -1662,6 +2033,18 @@ class TabBar(tk.Frame):
     def get_active_tab(self):
         """Get the currently active tab"""
         return self.active_tab
+    
+    def make_tab_permanent(self, file_path):
+        """Convert temporary tab to permanent (double-click behavior)"""
+        if file_path in self.tabs:
+            tab = self.tabs[file_path]
+            if tab['is_temporary']:
+                tab['is_temporary'] = False
+                # Change from italic to normal font
+                tab['label'].config(font=self.system_theme.get_system_font('default'))
+                # Update visual indication
+                filename = os.path.basename(file_path) if file_path else "New File"
+                tab['label'].config(text=filename)  # Remove italic styling
 
 class ModernLogLogGUI:
     """Main GUI class with system theme integration"""
@@ -1831,6 +2214,10 @@ class ModernLogLogGUI:
         
         # Connect tree renderer to GUI for change notifications
         self.tree_renderer.gui = self
+        
+        # Ensure tree renderer gets focus when content is shown
+        self.editor_content_frame.bind("<FocusIn>", lambda e: self.tree_renderer.focus_set())
+        self.editor_content_frame.bind("<Button-1>", lambda e: self.tree_renderer.focus_set())
     
     def on_tab_select(self, file_path):
         """Handle tab selection with optimized performance"""
@@ -2192,21 +2579,25 @@ class ModernLogLogGUI:
             # Add tab to tab bar
             self.tab_bar.add_tab(file_path, is_temporary)
             
-            # Load file content
-            if self.tree_renderer.load_from_file(file_path):
+            # Load file content by switching to the file (this creates viewport and loads content)
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    content = f.read()
+                self.tree_renderer.switch_to_file(file_path, content)
                 self.current_file = file_path
                 self.file_modified = False
                 
                 # Save the original file content as the tab's tree state (not serialized)
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    original_content = f.read()
-                self.tabs[file_path]['tree_state'] = original_content
+                self.tabs[file_path]['tree_state'] = content
                 
                 self.update_title()
                 self.add_to_recent_files(file_path)
                 self.update_status(f"📂 Opened {os.path.basename(file_path)}")
-            else:
-                raise Exception("Failed to load file into tree")
+                
+                # Focus on content area after loading
+                self.after_idle(self._focus_on_content)
+            except Exception as load_error:
+                raise Exception(f"Failed to load file: {load_error}")
             
         except Exception as e:
             # Clean up failed tab
@@ -2214,6 +2605,32 @@ class ModernLogLogGUI:
                 del self.tabs[file_path]
                 self.tab_bar.close_tab(file_path)
             self.show_modern_error("Failed to open file", str(e))
+    
+    def _focus_on_content(self):
+        """Set focus to the content area instead of the file tree"""
+        try:
+            # Focus on tree renderer
+            self.tree_renderer.focus_set()
+            
+            # If there's an active viewport, focus on it and select first node
+            if self.tree_renderer.active_viewport:
+                self.tree_renderer.active_viewport.focus_set()
+                
+                # Set initial focus to first visible node if none selected
+                if not self.tree_renderer.active_viewport.tree.selection.focused_node:
+                    visible_nodes = self.tree_renderer.active_viewport.tree.get_visible_nodes()
+                    if visible_nodes:
+                        self.tree_renderer.set_focus(visible_nodes[0])
+        except Exception as e:
+            pass  # Silently handle focus issues
+    
+    def mark_file_modified(self):
+        """Mark the current file as modified"""
+        if self.current_file:
+            self.file_modified = True
+            if self.current_file in self.tabs:
+                self.tabs[self.current_file]['modified'] = True
+                self.tab_bar.update_tab_modified(self.current_file, True)
     
     def save_file(self):
         if self.current_file:
@@ -2406,7 +2823,7 @@ class ModernLogLogGUI:
         # Create search dialog
         search_dialog = tk.Toplevel(self.root)
         search_dialog.title("Search" if not scoped else "Scoped Search")
-        search_dialog.geometry("400x150")
+        search_dialog.geometry("450x200")
         search_dialog.configure(bg=self.system_theme.get_color('bg'))
         search_dialog.transient(self.root)
         search_dialog.grab_set()
@@ -2513,6 +2930,61 @@ class ModernLogLogGUI:
                 self.update_status(f"Found {len(search_results)} matches for '{term}'")
         else:
             self.update_status(f"'{term}' not found")
+        
+        return search_results if search_results else []
+    
+    def tree_search_enhanced(self, term: str, scoped=False, case_sensitive=False, use_regex=False):
+        """Enhanced search with additional options"""
+        try:
+            if scoped:
+                # Search within selected nodes
+                selected_nodes = self.tree_renderer.tree.selection.get_selected_nodes()
+                focused_node = self.tree_renderer.tree.selection.focused_node
+                
+                if not selected_nodes and focused_node:
+                    selected_nodes = [focused_node]
+                
+                if not selected_nodes:
+                    self.update_status("No nodes selected for scoped search")
+                    return []
+                
+                search_results = []
+                for node in selected_nodes:
+                    if use_regex:
+                        results = node.search_regex(term, case_sensitive=case_sensitive)
+                    else:
+                        results = node.search(term, case_sensitive=case_sensitive)
+                    search_results.extend(results)
+            else:
+                # Simple search across entire tree
+                if use_regex:
+                    search_results = self.tree_renderer.tree.search_regex(term, case_sensitive=case_sensitive)
+                else:
+                    search_results = self.tree_renderer.tree.search(term, case_sensitive=case_sensitive)
+            
+            if search_results:
+                # Focus first result
+                self.tree_renderer.set_focus(search_results[0])
+                
+                # Unfold ancestors of all results to make them visible
+                for result in search_results:
+                    self._unfold_ancestors(result)
+                
+                self.tree_renderer.refresh_display()
+                
+                # Update status
+                if len(search_results) == 1:
+                    self.update_status(f"Found 1 match for '{term}'")
+                else:
+                    self.update_status(f"Found {len(search_results)} matches for '{term}'")
+            else:
+                self.update_status(f"'{term}' not found")
+            
+            return search_results
+            
+        except Exception as e:
+            self.update_status(f"Search error: {e}")
+            return []
     
     def _unfold_ancestors(self, node):
         """Unfold all ancestors of a node to make it visible"""
@@ -2643,16 +3115,28 @@ class ModernLogLogGUI:
     
     # Implement remaining methods (undo, redo, cut, copy, paste, etc.)...
     def undo(self):
-        try:
-            self.text_editor.edit_undo()
-        except:
-            pass
+        """Undo last operation on tree"""
+        if self.tree_renderer and self.tree_renderer.active_viewport:
+            viewport = self.tree_renderer.active_viewport
+            if hasattr(viewport, 'undo_action'):
+                success = viewport.undo_action()
+                if success:
+                    self.mark_file_modified()
+                    self.update_status("↶ Undo successful")
+                else:
+                    self.update_status("Nothing to undo")
     
     def redo(self):
-        try:
-            self.text_editor.edit_redo()
-        except:
-            pass
+        """Redo last undone operation on tree"""
+        if self.tree_renderer and self.tree_renderer.active_viewport:
+            viewport = self.tree_renderer.active_viewport
+            if hasattr(viewport, 'redo_action'):
+                success = viewport.redo_action()
+                if success:
+                    self.mark_file_modified()
+                    self.update_status("↷ Redo successful")
+                else:
+                    self.update_status("Nothing to redo")
     
     def cut(self):
         try:

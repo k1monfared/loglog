@@ -2,25 +2,19 @@
     - Phase 1: Foundation Improvements #phase1 #foundation
         - Documentation & Cleanup #docs
             [] Remove references to other text editors from documentation
-            [] Focus on LogLog's unique features rather than comparisons
+            - Focus on LogLog's unique features rather than comparisons
             [] Update feature descriptions to be self-contained
         - System Integration #system
-            [] Replace custom styling with system theme integration
-            [] Use system fonts instead of hardcoded font families
-            [] Implement native scrollbars and UI elements
-            [] Research open source apps for system theme usage patterns
-            [] Ensure consistent appearance with other system applications
         - Theme System Fix #themes
             [] Fix dark mode implementation (currently showing light theme)
             [] Create proper theme switching mechanism
             [] Ensure theme persistence across sessions
             [] Test theme switching without restart requirement
-    
     - Phase 2: Core Architecture Redesign #phase2 #architecture
         - Tree-Based Rendering System #tree-rendering
             [] Analyze HTML export features for parity requirements
-            [] Implement node-based rendering instead of line-based text
-            [] Use existing TreeNode class from loglog.py
+            - Implement node-based rendering instead of line-based text
+            - Use existing TreeNode class from loglog.py
             [] Create GUI components that render individual tree nodes
             [] Separate tree structure logic from GUI presentation
         - HTML Feature Parity #html-parity
@@ -29,7 +23,6 @@
             [] Create smooth animations for node operations
             [] Implement tree navigation similar to HTML version
             [] Add visual hierarchy indicators
-    
     - Phase 3: Advanced Navigation & Interaction #phase3 #navigation
         - Keyboard Navigation System #keyboard
             [] Arrow Key Navigation:
@@ -50,7 +43,6 @@
             [] Shift+Right (continued): Extend selection to grandchildren
             [] Visual indication of selected nodes
             [] Bulk operations on selected nodes
-    
     - Phase 4: Enhanced User Experience #phase4 #ux
         - Search Functionality #search
             [] Ctrl+F: Simple search across entire document
@@ -60,7 +52,7 @@
             [] Case-sensitive and regex search options
         - Enhanced Search (Future Implementation) #enhanced-search #later
             [] Regex Search: Support for regular expressions
-            [] Case Sensitivity Toggle: Case-sensitive/insensitive options  
+            [] Case Sensitivity Toggle: Case-sensitive/insensitive options
             [] Search History: Remember recent searches
             [] Search and Replace: Bulk text replacement
             [] Filter Mode: Show only matching items
@@ -78,7 +70,6 @@
             [] Right-click context menus
             [] Drag and drop file operations
             [] Search within file tree
-    
     - Phase 5: Quality & Polish #phase5 #polish
         - Undo/Redo System #undo-redo
             [] Fix Ctrl+Z/Ctrl+Y functionality
@@ -95,7 +86,6 @@
             [] Screen reader compatibility
             [] High contrast mode support
             [] Tooltips and help system
-
 - Implementation Priority #priority
     - High Priority (Phase 1 & 2) #high-priority
         [] System theme integration
@@ -112,7 +102,6 @@
         [] Performance optimizations
         [] Accessibility improvements
         [] Advanced features and polish
-
 - Technical Considerations #technical
     - Architecture Changes #arch-changes
         [] Separate tree model from view rendering
@@ -128,19 +117,17 @@
         [] Maintain backward compatibility with existing .log files
         [] Ensure CLI integration continues to work
         [] Cross-platform testing (Windows, macOS, Linux)
-
 - Success Metrics #success-metrics
     [] Navigation feels as responsive as HTML version
     [] All HTML export features have GUI equivalents
     [] User can efficiently manage large documents (500+ items)
     [] Keyboard-only workflow is fully supported
     [] Interface matches system appearance standards
-
 - Navigation & Keyboard Shortcuts Specification #navigation-spec #completed
     - Detailed Behavior Specification #detailed-spec
         - TODO Status Cycling #todo-cycling
             [] Space Bar: [] → [-] → [x] → [] (three-item cycle)
-            [] Question Mark: Set to unknown [?] 
+            [] Question Mark: Set to unknown [?]
             [] Minus: Set to in-progress [-]
             [] Multi-selection: All shortcuts work on ALL selected items
         - Selection System Details #selection-details
@@ -148,7 +135,7 @@
             [] Hierarchy Selection: Shift+left/right expands up/down tree
             [] Ghost Highlighting: Ctrl+up/down previews, Space selects
             [] Focus in Multi-select: Last selected item or moved with Ctrl+arrows
-        - Editing Mode Details #editing-details  
+        - Editing Mode Details #editing-details
             [] Enter in middle: Breaks line, rest becomes new item
             [] Backspace at start: Combines with previous item
             [] Tab/Shift+Tab: Works in edit mode and normal mode
@@ -170,7 +157,7 @@
         - HTML Keyboard Shortcuts #html-shortcuts
             - Arrow Key Navigation #arrow-keys
                 [] ↑ (Up): Move to previous item in visual order
-                [] ↓ (Down): Move to next item in visual order  
+                [] ↓ (Down): Move to next item in visual order
                 [] → (Right):
                     - If item is folded: Unfold and move to first child
                     - If item is unfolded: Move to first child
@@ -182,7 +169,6 @@
                 [] Ctrl+0: Unfold all items
                 [] Ctrl+1-9: Show only levels 1-9 (fold deeper levels)
                 [] Ctrl+Shift+A: Focus mode - fold everything except current branch
-    
     - Required GUI Implementation #gui-implementation
         - Tree Node System #tree-nodes
             [] LogLogTreeNode class: GUI representation of tree nodes
@@ -222,7 +208,6 @@
                 [] Ctrl+W: Close current tab
                 [] Ctrl+Tab: Next tab
                 [] Ctrl+Shift+Tab: Previous tab
-    
     - Visual Requirements #visual-req
         - Focus Indicators #focus-indicators
             [] Focused Item: Clear border, background highlight
@@ -234,12 +219,11 @@
             [] Indentation: Visual hierarchy with proper spacing
         - Status Indicators #status-visual
             [] TODO States: Color-coded checkboxes
-                - [] Pending: Red
-                - [x] Complete: Gray with strikethrough
-                - [-] Progress: Orange  
-                - [?] Unknown: Yellow
+                [] Pending: Red
+                [x] Complete: Gray with strikethrough
+                [-] Progress: Orange
+                [?] Unknown: Yellow
             [] Modified Indicators: Asterisk or dot for unsaved changes
-    
     - Implementation Strategy #impl-strategy
         - Phase 1: Tree Node Widgets #tree-widgets
             [] Create custom tkinter widget for each tree node
@@ -266,7 +250,6 @@
             [] Add new item creation
             [] Handle tab/shift+tab for indentation
             [] Add edit mode visual feedback
-    
     - Success Criteria #success-criteria
         - Responsiveness #responsiveness
             [] < 50ms: Key press to visual feedback

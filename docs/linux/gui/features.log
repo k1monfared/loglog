@@ -1,0 +1,91 @@
+- modes
+    - edit mode:
+        - keyboard and mouse work exactly like a normal text editor
+    - view mode 
+        - controllers 
+            - keyboard
+                - up/down: goes to the previous/next item that is visible (does not change fold state)
+                - left: 
+                    - if it is a leaf node, goes to the parent node
+                    - if it is a foldable node
+                        - if it is not folded, folds it
+                        - if it is folded, gows to the parent node 
+                    - if it is a root node, does nothing
+                    - hence repeatedly pressing left on a folded node goes to the parent node and all the way up to the root node
+                - right:
+                    - if it is a leaf node, does nothing
+                    - if it is a foldable node
+                        - if it is not folded, goes to the first child node if any
+                        - if it is folded, unfolds it
+                    - hence repeatedly pressing right on a node goes to the first child node and all the way down to first the leaf node
+                - pgup/pgdown: scrolls up/down by one page
+                - ctrl+1/2/3/... folds/unfolds all the nodes at level 1/2/3/...
+                - ctrl+alt+1/2/3/... fpolds/unfolds all the other (except the current branch) nodes at level 1/2/3/...
+                - ctrl+shift+1/2/3/... folds/unfolds only the current branch at level 1/2/3/...
+                - space: cycles through to do item states: not done (empty) -> in progress (-) -> done (checked) -> not done (empty)
+                - ?: on a to do item puts it in unkown state (?)
+                - tab, alt+right: indents the item(s) (makes it a child of the previous sibling item)
+                - shift+tab, alt+left: outdents the item(s) (makes it a sibling of the parent
+                - shift+up/down: selects multiple items
+                - ctrl+up/down: keeps the selected item and moves to the previous/next item where space selects the item as well as all previously selected items 
+                - alt+up/down: moves the selected item(s) up/down keeping the relative structure
+                    - if the movement crosses a foldable node, the node does not unfold 
+                    - if the movement crosses a level, all items are kept at their current level, to make it go up/down a level, use alt+left/right
+                        - this could potentially cause a node having multiple empty layers and then some children, e.g.
+                            - example
+                                - item 1
+                                    - item 1.1
+                                        - 
+                                            - 
+                                                - item 2.1.1.1.2
+                                - item 2
+                                    item 2.1
+                                        - item 2.1.1
+                                            - item 2.1.1.1
+                                                - item 2.1.1.1.1
+                            - where  item 2.1.1.1.2 was moved from under item  item 2.1.1.1.1 up to under item 1.1.
+                            - this is not a problem and is allowed, but if you want to bring it back to level 3, use alt+left to outdent it twice
+                - ctrl+c: copies the selected item(s) to clipboard
+                - ctrl+x: cuts the selected item(s) to clipboard
+                - ctrl+v: pastes the item(s) from clipboard as the next sibling of the current item, keeping the original relative structure
+                - ctrl+z: undo
+                - ctrl+y: redo
+                - ctrl+0: toggles between fold all and unfold all
+                - ctrl+a: selects all items
+                - ctrl+f: focuses the search box
+                - ctrl+g: goes to the next search result
+                - ctrl+shift+g: goes to the previous search result
+                - home: goes to the first item
+                - end: goes to the last item
+            - mouse
+                - click: selects an item 
+                - click on the fold/unfold icon (triangle): folds/unfolds the item
+                - click on the to do icon (checkbox): cycles through to do item states: not done -> in progress -> done -> not done
+                - ctrl+click: keeps the selected item and selects the clicked item as well as all previously selected items
+                - shift+click: selects all items between the selected item and the clicked item
+                    - always the very first item and the very last item and everything in between are selected and nothing else 
+                - drag and drop: 
+                    - on selected item(s): moves the selected item(s) to the drop target as the next sibling, keeping the original relative structure
+                    - on unselected items: selectes multiple items that vertically span the movement of the mouse on the dragged region
+                - scroll wheel: scrolls up/down
+                - right click: shows context menu
+                    - add item before: adds a new item before the current item
+                    - add item after: adds a new item after the current item
+                    - add child item: adds a new item as the last child of the current item
+                    - delete item(s): deletes the selected item(s)
+                    - cut item(s): cuts the selected item(s) to clipboard
+                    - copy item(s): copies the selected item(s) to clipboard
+                    - paste item(s): pastes the item(s) from clipboard as the next sibling of the current item, keeping the original relative structure
+                    - indent item(s): indents the selected item(s) (makes it a child of the previous sibling item)
+                    - outdent item(s): outdents the selected item(s) (makes it a sibling of the parent
+                    - fold/unfold item: folds/unfolds the current item
+                    - fold/unfold all at level: folds/unfolds all the nodes at the level of the current item
+                    - fold/unfold all other at level: folds/unfolds all the other (except the current branch)
+                    - fold/unfold only current branch at level: folds/unfolds only the current branch at the level of the current item
+                    - expand all: unfolds all nodes
+                    - collapse all: folds all nodes
+                - drag the divider between the tree view and the detail view: resizes the two views
+    - mode switching 
+        - F2 switches between edit mode and view mode
+        - esc switches from edit mode to view mode
+        - enter switches from view mode to edit mode

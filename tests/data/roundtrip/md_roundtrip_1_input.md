@@ -1,0 +1,16 @@
+# Software Project
+
+## Backend
+- Database design
+- [ ] API endpoints
+- [x] Authentication
+
+```python
+def authenticate(user, password):
+    return verify_credentials(user, password)
+```
+
+## Frontend
+- [ ] UI components
+  - [x] Header
+  - [ ] Navigation

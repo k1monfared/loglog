@@ -36,7 +36,10 @@
 
 - Project Structure
 
-  - /tests/ - All test files and unit tests
+  - /tests/ - Comprehensive test framework with organized data files
+    - /tests/data/ - Test input/output pairs organized by conversion type
+    - /tests/test_framework.py - Core test framework
+    - /tests/test_conversions.py - Pytest-compatible wrapper
   - /docs/ - Documentation in loglog format (with .md conversions)
     - /docs/mobile
       - /docs/mobile/android
@@ -48,7 +51,7 @@
   - loglog.py - Core functionality and conversion methods
 - Naming Conventions
 
-  - Test files: test_input_*.txt for loglog examples
+  - Test files: organized in tests/data/ by conversion type (md_to_log/, log_to_md/, roundtrip/)
   - Generated files: same base name with appropriate extensions
   - Documentation: descriptive names ending in .log, converted to .md
 ## Working with Conversions

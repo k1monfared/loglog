@@ -1,0 +1,17 @@
+# Project Alpha
+This is the main project description.
+
+## Phase 1
+Initial setup and planning.
+
+### Task 1.1
+Configure development environment.
+
+### Task 1.2
+Set up version control.
+
+## Phase 2
+Implementation phase.
+
+### Task 2.1
+Core functionality development.

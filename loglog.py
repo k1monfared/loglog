@@ -1006,6 +1006,47 @@ def from_md(markdown_text):
         if stripped.startswith('- [') and len(stripped) > 4 and stripped[3] in ' x?':
             return True
         return False
+
+    def is_multiline_block_start(line):
+        """Check if line starts a multiline block"""
+        stripped = line.strip()
+        return (
+            stripped.startswith('```') or
+            stripped.startswith('~~~') or
+            stripped.startswith('"""') or
+            stripped.startswith("'''") or
+            stripped.startswith('$$') or
+            stripped.startswith('\\[') or
+            stripped.startswith('---') or
+            (stripped.startswith('<') and any(tag in stripped.lower() for tag in ['<pre', '<code', '<script', '<style']))
+        )
+
+    def get_multiline_block_end(start_line):
+        """Get the end delimiter for a multiline block"""
+        stripped = start_line.strip()
+        if stripped.startswith('```'):
+            return '```'
+        elif stripped.startswith('~~~'):
+            return '~~~'
+        elif stripped.startswith('"""'):
+            return '"""'
+        elif stripped.startswith("'''"):
+            return "'''"
+        elif stripped.startswith('$$'):
+            return '$$'
+        elif stripped.startswith('\\['):
+            return '\\]'
+        elif stripped.startswith('---'):
+            return '---'
+        elif stripped.startswith('<pre'):
+            return '</pre>'
+        elif stripped.startswith('<code'):
+            return '</code>'
+        elif stripped.startswith('<script'):
+            return '</script>'
+        elif stripped.startswith('<style'):
+            return '</style>'
+        return None
     
     def get_list_indent_level(line):
         """Get indentation level of list item"""
@@ -1049,6 +1090,26 @@ def from_md(markdown_text):
             indent = '    ' * total_indent_levels
             result_lines.append(f"{indent}{todo_text}")
         
+        # Multiline block
+        elif is_multiline_block_start(line):
+            flush_paragraph()
+            end_delimiter = get_multiline_block_end(line)
+            block_lines = [line]
+
+            # Collect all lines until end delimiter
+            i += 1
+            while i < len(lines):
+                block_line = lines[i].rstrip()
+                block_lines.append(block_line)
+                if end_delimiter and block_line.strip() == end_delimiter:
+                    break
+                i += 1
+
+            # Add one level of indentation to the entire block
+            block_indent = '    ' * (current_indent // 4 + 1)
+            for block_line in block_lines:
+                result_lines.append(f"{block_indent}{block_line}")
+
         # Regular list item
         elif line.lstrip().startswith('- '):
             flush_paragraph()
@@ -1058,7 +1119,7 @@ def from_md(markdown_text):
             total_indent_levels = current_indent // 4 + list_indent // 2
             indent = '    ' * total_indent_levels
             result_lines.append(f"{indent}- {list_text}")
-        
+
         # Regular paragraph text
         else:
             # Accumulate paragraph lines

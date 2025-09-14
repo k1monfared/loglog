@@ -1,0 +1,9 @@
+- Software Project
+    - Backend
+        - Database design
+        [] API endpoints
+        [x] Authentication
+    - Frontend
+        [] UI components
+            [x] Header
+            [] Navigation

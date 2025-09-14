@@ -1,0 +1,64 @@
+# Test Manifest for LogLog Conversions
+# This file defines all test cases and their expected conversions
+
+md_to_log_tests:
+  - name: "basic_headers"
+    description: "Simple header hierarchy conversion"
+    input_file: "md_to_log/basic_headers_input.md"
+    expected_output: "md_to_log/basic_headers_output.log"
+
+  - name: "todo_items"
+    description: "TODO list items conversion"
+    input_file: "md_to_log/todo_items_input.md"
+    expected_output: "md_to_log/todo_items_output.log"
+
+  - name: "mixed_lists"
+    description: "Mixed regular and TODO lists"
+    input_file: "md_to_log/mixed_lists_input.md"
+    expected_output: "md_to_log/mixed_lists_output.log"
+
+  - name: "code_blocks"
+    description: "Fenced code blocks with proper indentation"
+    input_file: "md_to_log/code_blocks_input.md"
+    expected_output: "md_to_log/code_blocks_output.log"
+
+  - name: "quote_blocks"
+    description: "Triple-quoted and other multiline blocks"
+    input_file: "md_to_log/quote_blocks_input.md"
+    expected_output: "md_to_log/quote_blocks_output.log"
+
+  - name: "nested_structures"
+    description: "Complex nested headers, lists, and blocks"
+    input_file: "md_to_log/nested_structures_input.md"
+    expected_output: "md_to_log/nested_structures_output.log"
+
+log_to_md_tests:
+  - name: "basic_hierarchy"
+    description: "Simple loglog to markdown conversion"
+    input_file: "log_to_md/basic_hierarchy_input.log"
+    expected_output: "log_to_md/basic_hierarchy_output.md"
+
+  - name: "todo_formatting"
+    description: "TODO items formatting in markdown"
+    input_file: "log_to_md/todo_formatting_input.log"
+    expected_output: "log_to_md/todo_formatting_output.md"
+
+  - name: "deep_nesting"
+    description: "Deep nesting with proper header levels"
+    input_file: "log_to_md/deep_nesting_input.log"
+    expected_output: "log_to_md/deep_nesting_output.md"
+
+roundtrip_tests:
+  - name: "md_roundtrip_1"
+    description: "Markdown -> Log -> Markdown (structural preservation)"
+    input_file: "roundtrip/md_roundtrip_1_input.md"
+    intermediate_file: "roundtrip/md_roundtrip_1_intermediate.log"
+    expected_output: "roundtrip/md_roundtrip_1_output.md"
+    test_type: "md_to_log_to_md"
+
+  - name: "log_roundtrip_1"
+    description: "Log -> Markdown -> Log (content preservation)"
+    input_file: "roundtrip/log_roundtrip_1_input.log"
+    intermediate_file: "roundtrip/log_roundtrip_1_intermediate.md"
+    expected_output: "roundtrip/log_roundtrip_1_output.log"
+    test_type: "log_to_md_to_log"

@@ -1,0 +1,29 @@
+- API Documentation
+    - Authentication Endpoint
+            """
+            POST /api/auth
+            Content-Type: application/json
+            
+            {
+                "username": "user@example.com",
+                "password": "secure_password"
+            }
+            """
+    - Math Formulas
+            $$
+            E = mc^2
+            $$
+    - Configuration
+        - Database settings
+              ```yaml
+              database:
+                host: localhost
+                port: 5432
+                name: loglog_db
+              ```
+        - Application config
+              '''
+              DEBUG = True
+              SECRET_KEY = 'your-secret-key'
+              DATABASE_URL = 'postgresql://localhost/loglog'
+              '''

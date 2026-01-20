@@ -908,7 +908,7 @@ def build_tree_from_text(text_lines):
             if stack:
                 parent_depth, parent = stack[-1]
                 node_numbering = parent.name + str(len(parent.children)) + "."
-                node = TreeNode(name=node_numbering, data=line)
+                node = TreeNode(name=node_numbering, data=line.rstrip('\n\r'))
                 parent.add_child(node)  # Add node as a child of the parent
             stack.append((depth, node))
 
@@ -1457,6 +1457,22 @@ def print_tree_to_file(node, file_handle, depth=0):
         print_tree_to_file(child, file_handle, depth + 1)
 
 
+def tree_to_log_string(root):
+    """
+    Convert tree to loglog format string without writing to file.
+
+    Args:
+        root (TreeNode): Root node of the tree
+
+    Returns:
+        str: Tree content in loglog format
+    """
+    import io
+    buffer = io.StringIO()
+    print_tree_to_file(root, buffer)
+    return buffer.getvalue()
+
+
 def export_todos_filtered(input_file_path, status_filter=None, output_suffix="_todos"):
     """
     Export TODO items with optional status filtering.
@@ -1534,5 +1550,71 @@ def export_todos_filtered(input_file_path, status_filter=None, output_suffix="_t
     # Write filtered content
     with open(output_path, 'w') as f:
         print_tree_to_file(filtered_root, f)
-    
+
     return output_path
+
+
+def get_todos_filtered_content(input_file_path, status_filter=None):
+    """
+    Get filtered TODO content as a string without writing to file.
+
+    Args:
+        input_file_path (str): Path to input loglog file
+        status_filter: Filter by status (True=completed, False=pending, "in_progress"=in progress, None=all)
+
+    Returns:
+        str: Filtered TODO content in loglog format
+    """
+    # Build tree from file
+    root = build_tree_from_file(input_file_path)
+
+    def collect_todo_branches(node, path=[]):
+        """Collect branches containing TODO items"""
+        matching_branches = []
+        current_path = path + [node]
+
+        # Check if current node is a TODO with matching status
+        if node.type == "todo":
+            if status_filter is None or node.status == status_filter:
+                matching_branches.append(current_path)
+
+        # Recursively check children
+        for child in node.children:
+            matching_branches.extend(collect_todo_branches(child, current_path))
+
+        return matching_branches
+
+    # Collect TODO branches
+    todo_branches = collect_todo_branches(root)
+
+    if not todo_branches:
+        status_desc = "all" if status_filter is None else ("completed" if status_filter else "pending")
+        raise ValueError(f"No {status_desc} TODO items found")
+
+    # Build filtered tree
+    filtered_root = TreeNode(name="", data="")
+    filtered_root.type = "root"
+
+    for branch in todo_branches:
+        current = filtered_root
+
+        # Skip root node in branch
+        for node in branch[1:]:
+            # Find or create child at this level
+            child = None
+            for existing_child in current.children:
+                if existing_child.name == node.name:
+                    child = existing_child
+                    break
+
+            if child is None:
+                # Create new child
+                child = TreeNode(name=node.name, data=node.data)
+                child.type = node.type
+                if hasattr(node, 'status'):
+                    child.status = node.status
+                current.add_child(child)
+
+            current = child
+
+    return tree_to_log_string(filtered_root)

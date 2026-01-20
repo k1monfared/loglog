@@ -19,7 +19,7 @@ from loglog import (
     build_tree_from_file,
     build_tree_from_text,
     to_html_file,
-    to_md_file, 
+    to_md_file,
     to_latex_file,
     to_pdf_file,
     from_md_file,
@@ -27,8 +27,10 @@ from loglog import (
     filter_by_hashtags,
     export_hashtag_filtered,
     export_todos_filtered,
+    get_todos_filtered_content,
     print_tree,
-    print_tree_to_file
+    print_tree_to_file,
+    tree_to_log_string
 )
 
 
@@ -70,6 +72,10 @@ Examples:
         parser.add_argument('-v', '--verbose', action='store_true',
                           help='Enable verbose output')
         parser.add_argument('--version', action='version', version='LogLog CLI 1.0.0')
+        parser.add_argument('--diff', action='store_true',
+                          help='Show diff without writing files')
+        parser.add_argument('--preview', action='store_true',
+                          help='Open diff in VS Code for review')
         
         # Create subcommands
         subparsers = parser.add_subparsers(dest='command', help='Available commands')
@@ -92,7 +98,7 @@ Examples:
             description='Convert LogLog files to HTML, Markdown, LaTeX, or PDF'
         )
         parser.add_argument('files', nargs='+', help='Input files (supports wildcards)')
-        parser.add_argument('--to', choices=['html', 'md', 'latex', 'pdf'], 
+        parser.add_argument('--to', choices=['html', 'md', 'latex', 'pdf', 'log'],
                           required=True, help='Target format')
         parser.add_argument('--header-levels', type=int, default=4,
                           help='Maximum header levels for conversion (default: 4)')
@@ -168,9 +174,9 @@ Examples:
             description='Convert multiple LogLog files in batch'
         )
         parser.add_argument('directory', help='Directory to process')
-        parser.add_argument('--from', dest='from_format', choices=['log', 'md'], 
+        parser.add_argument('--from', dest='from_format', choices=['log', 'md'],
                           default='log', help='Source format')
-        parser.add_argument('--to', choices=['html', 'md', 'latex', 'pdf'], 
+        parser.add_argument('--to', choices=['html', 'md', 'latex', 'pdf', 'log'],
                           required=True, help='Target format')
         parser.add_argument('--recursive', '-r', action='store_true',
                           help='Process directories recursively')
@@ -213,46 +219,86 @@ Examples:
     def _handle_convert(self, args) -> int:
         """Handle convert command"""
         files = self._expand_file_patterns(args.files)
-        
+
         if not files:
             print("No files found matching the pattern", file=sys.stderr)
             return 1
-        
+
         success_count = 0
         for file_path in files:
             try:
                 if args.verbose:
                     print(f"Converting {file_path} to {args.to}...")
-                
-                output_path = self._get_output_path(file_path, args.to, args.output_dir)
-                
-                if os.path.exists(output_path) and not args.overwrite:
+
+                output_path = self._get_output_path(file_path, args.to, getattr(args, 'output_dir', None))
+
+                # Generate content based on format
+                root = build_tree_from_file(file_path)
+                is_binary = False
+
+                if args.to == 'html':
+                    title = getattr(args, 'title', None) or os.path.splitext(os.path.basename(file_path))[0]
+                    content = root.to_html(title)
+                elif args.to == 'md':
+                    header_levels = getattr(args, 'header_levels', 4)
+                    content = root.to_md(header_levels)
+                elif args.to == 'latex':
+                    header_levels = getattr(args, 'header_levels', 4)
+                    content = root.to_latex(header_levels)
+                elif args.to == 'pdf':
+                    header_levels = getattr(args, 'header_levels', 4)
+                    content = root.to_pdf(header_levels)
+                    is_binary = True
+                elif args.to == 'log':
+                    content = tree_to_log_string(root)
+
+                # Handle diff/preview modes
+                if getattr(args, 'diff', False):
+                    if is_binary:
+                        print(f"Cannot show diff for binary format (pdf)", file=sys.stderr)
+                    else:
+                        # For --to log (standardization), compare with input file
+                        # For other formats, compare with output file
+                        compare_path = file_path if args.to == 'log' else output_path
+                        self._show_diff(compare_path, content)
+                    success_count += 1
+                    continue
+
+                if getattr(args, 'preview', False):
+                    if is_binary:
+                        print(f"Cannot preview binary format (pdf)", file=sys.stderr)
+                    else:
+                        # For --to log (standardization), compare with input file
+                        compare_path = file_path if args.to == 'log' else output_path
+                        self._preview_in_vscode(compare_path, content)
+                    success_count += 1
+                    continue
+
+                # Normal write mode
+                if os.path.exists(output_path) and not getattr(args, 'overwrite', False):
                     response = input(f"File {output_path} exists. Overwrite? (y/N): ")
                     if response.lower() != 'y':
                         continue
-                
-                # Perform conversion
-                if args.to == 'html':
-                    title = args.title or os.path.splitext(os.path.basename(file_path))[0]
-                    root = build_tree_from_file(file_path)
-                    html_content = root.to_html(title)
+
+                # Write content
+                if is_binary:
+                    with open(output_path, 'wb') as f:
+                        f.write(content)
+                else:
                     with open(output_path, 'w') as f:
-                        f.write(html_content)
-                elif args.to == 'md':
-                    to_md_file(file_path, args.header_levels)
-                elif args.to == 'latex':
-                    to_latex_file(file_path, args.header_levels)
-                elif args.to == 'pdf':
-                    to_pdf_file(file_path, args.header_levels)
-                
+                        f.write(content)
+
                 success_count += 1
                 if args.verbose:
                     print(f"✓ Created {output_path}")
-                    
+
             except Exception as e:
                 print(f"Failed to convert {file_path}: {e}", file=sys.stderr)
-        
-        print(f"Successfully converted {success_count}/{len(files)} files")
+
+        if getattr(args, 'diff', False) or getattr(args, 'preview', False):
+            print(f"Processed {success_count}/{len(files)} files")
+        else:
+            print(f"Successfully converted {success_count}/{len(files)} files")
         return 0 if success_count > 0 else 1
     
     def _handle_filter(self, args) -> int:
@@ -260,28 +306,41 @@ Examples:
         if not os.path.exists(args.file):
             print(f"File not found: {args.file}", file=sys.stderr)
             return 1
-        
+
         hashtags = [tag.strip() for tag in args.hashtags.split(',')]
-        
+
         try:
             if args.verbose:
                 print(f"Filtering {args.file} for hashtags: {', '.join(hashtags)}")
-            
+
             root = build_tree_from_file(args.file)
             filtered_tree = filter_by_hashtags(root, hashtags, args.preserve_structure)
-            
+
             if filtered_tree is None or not filtered_tree.children:
                 print("No content found matching the specified hashtags")
                 return 1
-            
+
+            # Generate content to string
+            content = tree_to_log_string(filtered_tree)
+
+            # Handle diff/preview modes
+            if getattr(args, 'diff', False):
+                self._show_diff(args.output, content)
+                return 0
+
+            if getattr(args, 'preview', False):
+                self._preview_in_vscode(args.output, content)
+                return 0
+
+            # Normal write mode
             with open(args.output, 'w') as f:
-                print_tree_to_file(filtered_tree, f)
-            
+                f.write(content)
+
             if args.verbose:
                 print(f"✓ Filtered content saved to {args.output}")
-            
+
             return 0
-            
+
         except Exception as e:
             print(f"Failed to filter file: {e}", file=sys.stderr)
             return 1
@@ -291,10 +350,10 @@ Examples:
         if not os.path.exists(args.file):
             print(f"File not found: {args.file}", file=sys.stderr)
             return 1
-        
+
         try:
             root = build_tree_from_file(args.file)
-            
+
             # Map status filter
             status_map = {
                 'pending': False,
@@ -303,37 +362,68 @@ Examples:
                 'all': None
             }
             status_filter = status_map[args.status]
-            
+
             if args.format == 'log':
                 if args.output:
-                    export_todos_filtered(args.file, status_filter, 
-                                        args.output.replace('.log', '').replace('_todos', ''))
+                    # Generate content as string
+                    content = get_todos_filtered_content(args.file, status_filter)
+
+                    # Handle diff/preview modes
+                    if getattr(args, 'diff', False):
+                        self._show_diff(args.output, content)
+                        return 0
+
+                    if getattr(args, 'preview', False):
+                        self._preview_in_vscode(args.output, content)
+                        return 0
+
+                    # Normal write mode
+                    with open(args.output, 'w') as f:
+                        f.write(content)
                     if args.verbose:
                         print(f"✓ TODOs saved to {args.output}")
                 else:
                     # Print to stdout
                     self._print_todos_to_stdout(root, status_filter)
-            
+
             elif args.format == 'json':
                 todos = self._extract_todos_as_json(root, status_filter)
-                output = json.dumps(todos, indent=2)
-                
+                content = json.dumps(todos, indent=2)
+
                 if args.output:
+                    # Handle diff/preview modes
+                    if getattr(args, 'diff', False):
+                        self._show_diff(args.output, content)
+                        return 0
+
+                    if getattr(args, 'preview', False):
+                        self._preview_in_vscode(args.output, content)
+                        return 0
+
                     with open(args.output, 'w') as f:
-                        f.write(output)
+                        f.write(content)
                 else:
-                    print(output)
-            
+                    print(content)
+
             elif args.format == 'csv':
-                todos = self._extract_todos_as_csv(root, status_filter)
+                content = self._extract_todos_as_csv(root, status_filter)
                 if args.output:
+                    # Handle diff/preview modes
+                    if getattr(args, 'diff', False):
+                        self._show_diff(args.output, content)
+                        return 0
+
+                    if getattr(args, 'preview', False):
+                        self._preview_in_vscode(args.output, content)
+                        return 0
+
                     with open(args.output, 'w') as f:
-                        f.write(todos)
+                        f.write(content)
                 else:
-                    print(todos)
-            
+                    print(content)
+
             return 0
-            
+
         except Exception as e:
             print(f"Failed to extract TODOs: {e}", file=sys.stderr)
             return 1
@@ -421,9 +511,11 @@ Examples:
             title=None,
             output_dir=None,
             overwrite=True,
-            verbose=args.verbose
+            verbose=args.verbose,
+            diff=getattr(args, 'diff', False),
+            preview=getattr(args, 'preview', False)
         )
-        
+
         return self._handle_convert(convert_args)
     
     def _handle_stats(self, args) -> int:
@@ -453,7 +545,53 @@ Examples:
         return 0 if all_stats else 1
     
     # Helper methods
-    
+
+    def _show_diff(self, original_path: str, new_content: str) -> bool:
+        """Show unified diff. Returns True if there are changes."""
+        import difflib
+
+        if os.path.exists(original_path):
+            with open(original_path) as f:
+                original_lines = f.readlines()
+        else:
+            original_lines = []
+
+        new_lines = new_content.splitlines(keepends=True)
+        if new_lines and not new_lines[-1].endswith('\n'):
+            new_lines[-1] += '\n'
+
+        diff = list(difflib.unified_diff(
+            original_lines, new_lines,
+            fromfile=original_path,
+            tofile=original_path + ' (new)'
+        ))
+
+        if diff:
+            print(''.join(diff))
+            return True
+        else:
+            print(f"No changes for {original_path}")
+            return False
+
+    def _preview_in_vscode(self, original_path: str, new_content: str) -> None:
+        """Open VS Code diff view with original vs new content."""
+        import subprocess
+        import tempfile
+
+        suffix = os.path.splitext(original_path)[1] or '.log'
+        with tempfile.NamedTemporaryFile(mode='w', suffix=suffix, delete=False) as f:
+            f.write(new_content)
+            temp_path = f.name
+
+        # If original doesn't exist, just open the new file
+        if not os.path.exists(original_path):
+            subprocess.run(['code', temp_path])
+        else:
+            subprocess.run(['code', '--diff', original_path, temp_path])
+
+        print(f"Opened diff in VS Code. Temp file: {temp_path}")
+        print("To apply: copy content from right pane, or manually save to target.")
+
     def _expand_file_patterns(self, patterns: List[str]) -> List[str]:
         """Expand file patterns and wildcards"""
         files = []
@@ -470,9 +608,10 @@ Examples:
         
         extensions = {
             'html': '.html',
-            'md': '.md', 
+            'md': '.md',
             'latex': '.tex',
-            'pdf': '.pdf'
+            'pdf': '.pdf',
+            'log': '.log'
         }
         
         extension = extensions.get(format_type, '.txt')

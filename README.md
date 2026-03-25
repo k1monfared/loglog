@@ -1,199 +1,459 @@
-# loglog
+# LogLog
 
-A simple way of taking notes with absolute minimum structure. Everything is a list, even the list items are lists.
+A hierarchical note-taking format where **everything is a list**. LogLog eliminates structural decision-making so you can focus entirely on capturing your thoughts. No headers, no sections, no paragraphs -- just indentation.
 
-## What is LogLog?
+## What Is LogLog?
 
-LogLog is a hierarchical note-taking format that eliminates structural decision-making from the writing process. You can start writing at any depth level and reorganize later through simple indentation.
+LogLog is a plain-text format built on a single rule: **nesting through indentation**. Every item is a list item, and every list item can contain other list items. That is the entire specification.
 
-**Example:**
 ```
-- Project Ideas
-    - Mobile App
-        - User authentication
-        - Data synchronization  
-        [] Implement offline mode
-        [x] Design wireframes
-    - Desktop Tool
-        - CLI interface
-        - GUI application
+- Project planning
+    - Timeline
+        - Q1: Research phase
+        - Q2: Development phase
+            - Build prototype
+            - User testing
+    - Budget
+        - Engineering: $50k
+        - Design: $20k
+    - Team
+        [x] Hire lead developer
+        [-] Recruit designers
+        [] Set up CI/CD pipeline
 ```
 
-## Core Philosophy
+This repository provides:
 
-**Zero Structural Overhead**: No need to decide between headers, sections, lists, or paragraphs. Everything is a list item that can be nested indefinitely.
+- **`loglog.py`** -- A Python library that parses loglog files into tree structures and converts them to Markdown, HTML, LaTeX, and PDF
+- **`loglog_cli.py`** -- A full-featured command-line interface for batch processing, filtering, searching, and analyzing loglog files
+- **`loglog-mobile/`** -- A React Native mobile application for editing loglog files on Android/iOS
+- **`loglog-knowledge/`** -- An experimental knowledge graph service that extracts structured knowledge from loglog documents using Claude API
 
-**Mind-First Structure**: Start writing wherever your thoughts flow, then organize retroactively by selecting and indenting.
+## Why LogLog?
 
-## Key Benefits
+### Zero Structural Overhead
 
-- **Reduces cognitive load** - focus on content, not formatting
-- **Highly flexible** - restructure by simple indentation  
-- **Cross-platform** - plain text files work everywhere
-- **Foldable in most editors** - collapse/expand sections
-- **Algorithmically parseable** - enables powerful tooling
+Traditional formats force you to make structural decisions while writing:
 
-## Quick Start
+```markdown
+# Is this a title?
+## Or a subtitle?
+### Or a section header?
 
-1. **Create a `.log` file** and start writing with dashes:
-   ```
-   - Your first thought
-       - Supporting detail
-       - Another detail
-   - Second main thought
-   ```
+- Should this be a bullet point?
+  1. Or a numbered list?
 
-2. **Use TODO syntax** for tasks:
-   ```
-   [] Pending task
-   [x] Completed task
-   [?] Unknown status
-   ```
+This paragraph needs to be separate...
+Or does it belong in the list above?
+```
 
-3. **Install and use LogLog**:
-   ```bash
-   # Option 1: Install system package (recommended)
-   ./build_simple.sh                    # Build .deb package
-   sudo dpkg -i loglog_1.0.0_all.deb   # Install system-wide
-   loglog convert notes.log --to html   # Use anywhere
-   
-   # Option 2: Use CLI directly
-   python3 setup_cli.py                 # One-time setup
-   loglog convert notes.log --to html
-   ```
-   
-   Or using Python library:
-   ```python
-   from loglog import build_tree_from_file, to_html_file, to_md_file
-   
-   # Convert to interactive HTML
-   to_html_file('notes.log')
-   
-   # Convert to Markdown
-   to_md_file('notes.log')
-   ```
+LogLog removes all of that friction:
 
-## Features
+```
+- Just start writing your thought
+    - Add details by indenting
+    - Keep adding whatever comes to mind
+        - No decisions about format types
+        - No wondering if this should be a header
+    - Everything flows naturally
+```
 
-### Desktop Python Library ✅
-- **Tree parsing and manipulation**
-- **Format conversion**: Markdown ↔ LogLog, HTML (interactive), LaTeX, PDF
-- **TODO management** with status tracking
-- **Hashtag filtering** - extract sections by tags (`#decision`, `#important`)
-- **Branch preservation** - maintain structure when filtering
+Your brain can focus 100% on **what** you are thinking, not **how** to structure it.
 
-### Mobile Application ✅
-- **React Native app** with gesture-based editing
-- **Real-time parsing** and visual feedback  
-- **File management** with persistent storage
-- **Multi-format export** and native sharing
-- **Advanced touch controls** (swipe to indent, double-tap to fold)
+### The Magic of Select-and-Indent
 
-**Status**: Production ready, pending device testing
+LogLog supports a powerful "write first, organize later" workflow:
 
-### Command-Line Interface ✅
-- **Full-featured CLI tool** with argparse-based commands
-- **File conversion** - convert to HTML, Markdown, LaTeX, PDF
-- **Batch operations** - process multiple files efficiently
-- **Content filtering** - extract by hashtags or TODO status
-- **Search functionality** - regex and text search across files
-- **Statistics and analysis** - file metrics and TODO tracking
+1. **Start anywhere** -- begin with any idea at any depth level
+2. **Nest naturally** -- go deeper as details emerge
+3. **Retroactive organization** -- select a group of related items, press Tab, and they all indent one level. Now you have room above them to add a parent concept
 
-### Distribution Package ✅
-- **Debian package (.deb)** ready for Ubuntu/Debian installation
-- **Zero dependencies** - uses only Python standard library
-- **System-wide installation** - `apt install` compatible
-- **Professional packaging** - follows Debian Policy standards
-- **33KB package size** - lightweight and efficient
-- **Ubuntu repository ready** - documented submission process
+**Before organizing:**
+```
+- meeting with Sarah about project timeline
+- need to order more office supplies
+- review quarterly budget numbers
+- call vendor about delivery delay
+- prepare presentation for board meeting
+```
 
-### Desktop GUI Application ✅
-- **Modern Tkinter-based GUI** with VS Code-style interface
-- **Multi-tab editor** with persistent tab rendering for instant switching
-- **Tree-based rendering** with keyboard navigation (arrow keys, Enter, Space)
-- **Real-time folding/unfolding** with visual hierarchy indicators
-- **TODO status management** with one-key shortcuts
-- **Search functionality** (Ctrl+F basic, Ctrl+Shift+F scoped)
-- **System theme integration** with automatic dark/light mode
-- **Comprehensive benchmarking system** for performance monitoring
-- **Viewport-based architecture** for scalable document handling
+**After grouping (select related items, indent, add parents):**
+```
+- Administrative Tasks
+    - meeting with Sarah about project timeline
+    - need to order more office supplies
+    - call vendor about delivery delay
+- Financial Review
+    - review quarterly budget numbers
+    - prepare presentation for board meeting
+```
 
-**Usage**: `python3 loglog_gui.py`
+Structure emerges from content, not the other way around.
 
-### Performance Benchmarking 📊
-- **Automated performance testing** with statistical analysis
-- **Version-tracked results** using git commit hashes
-- **Regression detection** with configurable thresholds
-- **Multi-dimensional metrics**: file opening, tab switching, folding operations
-- **Memory usage monitoring** and optimization tracking
-- **CI-ready integration** for continuous performance validation
+### Comparison to Traditional Formats
 
-**Usage**: `cd benchmark && python3 benchmark_runner.py`
+| Feature | Markdown | Word Processors | Org Mode | LogLog |
+|---------|----------|-----------------|----------|--------|
+| Structural decisions upfront | Yes (header levels) | Yes (styles) | Yes (`*` levels) | No |
+| Editor dependency | No | Yes | Yes (Emacs) | No |
+| Learning curve | Moderate | Low | High | Minimal |
+| Restructuring ease | Difficult | Difficult | Moderate | Trivial (select + Tab) |
+| Plain text | Yes | No | Yes | Yes |
 
-### Planned Features 📋
-- **Search functionality** across document collections  
-- **Knowledge graph generation** from related topics
-- **Undo/redo functionality** (Ctrl+Z/Ctrl+Y)
-- **Performance optimizations** for large document handling
-
-## Documentation
-
-### Core Features
-- **[CLI Usage Guide](docs/CLI_USAGE.md)** - Complete command-line interface documentation
-- **[Features](docs/FEATURES.md)** - Detailed feature explanations and philosophy
-- **[Format Conversions](docs/FORMAT_CONVERSIONS.md)** - Conversion algorithms and examples
-
-### GUI Application
-- **[Benchmarking System](benchmark/README.md)** - Performance testing and monitoring guide
-- **[Performance Analysis](PERFORMANCE_ANALYSIS.md)** - Current performance status and optimization roadmap
-
-### Development
-- **[Packaging Guide](docs/PACKAGING.md)** - Building and distributing .deb packages
-- **[Environment Setup](docs/ENVIRONMENT_SETUP.md)** - Configure system-specific paths and settings
-- **[Mobile Development](docs/mobile/DEVELOPMENT_SUMMARY.md)** - Mobile app technical details
-- **[Technical Architecture](docs/mobile/TECHNICAL_ARCHITECTURE.md)** - System design and patterns
-- **[Roadmap](docs/planning/ROADMAP.md)** - Complete project roadmap with decisions
+LogLog shares philosophical similarities with [Emacs Org mode](https://orgmode.org/) -- both use plain text with minimal markup for hierarchical thinking. The key difference is that LogLog has exactly one structural concept (indentation) and works in any text editor.
 
 ## Installation
 
-### System Package (Recommended)
+### Python Library
+
+Clone the repository and use `loglog.py` directly -- it has no external dependencies for core functionality:
+
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/loglog.git
+git clone https://github.com/k1monfared/loglog.git
 cd loglog
-
-# Build and install .deb package
-./build_simple.sh                    # Creates loglog_1.0.0_all.deb
-sudo dpkg -i loglog_1.0.0_all.deb   # Install system-wide
-sudo apt-get install -f             # Fix any dependencies
-
-# Verify installation
-loglog --version
-man loglog
 ```
 
-### Development Setup
+### CLI Tool
+
+Set up the `loglog` command for system-wide access:
+
 ```bash
-# Set up environment (required for hooks and system-specific paths)
-cp .env.example .env
-# Edit .env file to match your system - see docs/ENVIRONMENT_SETUP.md
-
-# Use the Python library
-python3 -c "from loglog import build_tree_from_file; print('LogLog ready!')"
-
-# Run mobile app (requires Node.js and Expo)
-cd loglog-mobile && npm install && npm start
+python3 setup_cli.py
 ```
 
-## Contributing
+Or install as a Python package:
 
-LogLog is designed to be simple and maintainable. When contributing:
+```bash
+pip install .
+```
 
-1. **Follow the core philosophy** - avoid feature bloat
-2. **Maintain cross-platform compatibility** 
-3. **Preserve the plain-text nature** of the format
-4. **Test with real-world use cases**
+### Optional Dependencies
+
+- **pandoc** -- Required for LaTeX conversion (`sudo apt install pandoc`)
+- **pdflatex** -- Required for PDF generation (`sudo apt install texlive-latex-base`)
+
+## The LogLog Format
+
+### Basic Syntax
+
+Every item is indented with 4 spaces (or 1 tab) per nesting level. Items can optionally start with `- `:
+
+```
+- Top-level item
+    - Child item
+        - Grandchild item
+    - Another child
+```
+
+### TODO Items
+
+Items starting with brackets are treated as TODO items with tracked status:
+
+| Syntax | Status | Description |
+|--------|--------|-------------|
+| `[] Task` or `[ ] Task` | Pending | Not yet started |
+| `[x] Task` | Completed | Finished |
+| `[-] Task` | In Progress | Currently being worked on |
+| `[?] Task` | Unknown | Status unclear |
+
+```
+- Sprint 3
+    [x] Design database schema
+    [x] Implement API endpoints
+    [-] Write integration tests
+    [] Deploy to staging
+    [] Performance benchmarking
+```
+
+### Hashtags
+
+Items can contain hashtags for filtering and organization:
+
+```
+- Meeting notes #meeting #q1
+    - Discussed budget allocation #budget #decision
+    - Action item: update roadmap #action
+```
+
+## Python Library Usage
+
+### Parsing and Tree Operations
+
+```python
+from loglog import build_tree_from_file, build_tree_from_text, print_tree
+
+# Parse from file
+root = build_tree_from_file("notes.log")
+
+# Parse from text
+text_lines = """
+- Project Alpha
+    - Phase 1
+        [x] Design the architecture
+        [] Write initial code
+    - Phase 2
+        [] Plan testing strategy
+""".split('\n')
+root = build_tree_from_text(text_lines)
+
+# Print the tree
+print_tree(root)
+
+# Access specific nodes by address
+from loglog import get_node
+node = get_node(root, "0.1.")  # Second child of first item
+print(node.data)     # "Phase 2"
+print(node.type)     # "regular"
+```
+
+### Convert to Markdown
+
+The `to_md()` method uses a **shallowest leaf depth algorithm** to intelligently determine which levels become headers and which become list items:
+
+```python
+root = build_tree_from_file("notes.log")
+markdown = root.to_md(header_levels=4)
+
+# Or write directly to file
+from loglog import to_md_file
+to_md_file("notes.log")  # Creates notes.md
+```
+
+**Example conversion** -- given this loglog input:
+```
+- Project Overview
+    - Goals
+        - Increase user engagement by 20%
+        - Reduce load time to under 2 seconds
+    - Timeline
+        - Q1: Research
+        - Q2: Implementation
+```
+
+The output is:
+```markdown
+# Project Overview
+
+## Goals
+
+- Increase user engagement by 20%
+- Reduce load time to under 2 seconds
+
+## Timeline
+
+- Q1: Research
+- Q2: Implementation
+```
+
+### Convert from Markdown
+
+```python
+from loglog import from_md, from_md_file, from_md_to_file
+
+# Convert markdown string to loglog format
+loglog_text = from_md(markdown_string)
+
+# Convert markdown file to loglog string
+loglog_text = from_md_file("document.md")
+
+# Convert markdown file to loglog file
+from_md_to_file("document.md")  # Creates document.txt
+```
+
+### Generate Interactive HTML
+
+The HTML output is a fully self-contained document with embedded CSS and JavaScript -- no external dependencies. It features:
+
+- Foldable/expandable tree sections (click triangles or use keyboard)
+- Keyboard navigation (arrow keys, Enter/Space to toggle)
+- Level-based folding (Ctrl+1 through Ctrl+9, Ctrl+0 to unfold all)
+- Focus mode (Ctrl+Alt+1-9 folds everything except the current branch)
+- Dark/light theme toggle with localStorage persistence
+- Styled TODO items (red for pending, strikethrough for completed, orange for in-progress)
+
+```python
+from loglog import build_tree_from_file, to_html_file
+
+# Generate HTML file
+to_html_file("notes.log")  # Creates notes.html
+
+# Or get HTML as string with custom title
+root = build_tree_from_file("notes.log")
+html = root.to_html("My Project Notes")
+```
+
+### Generate LaTeX and PDF
+
+```python
+from loglog import to_latex_file, to_pdf_file
+
+to_latex_file("notes.log")  # Creates notes.tex (requires pandoc)
+to_pdf_file("notes.log")    # Creates notes.pdf (requires pandoc + pdflatex)
+```
+
+### Filter by Hashtags
+
+```python
+from loglog import build_tree_from_file, filter_by_hashtags, export_hashtag_filtered
+
+root = build_tree_from_file("project.log")
+
+# Filter in memory
+filtered = filter_by_hashtags(root, ["decision", "important"])
+
+# Export filtered content to file
+export_hashtag_filtered("project.log", ["meeting"])  # Creates project_meeting.log
+```
+
+### Extract TODO Items
+
+```python
+from loglog import export_todos_filtered, get_todos_filtered_content
+
+# Export pending TODOs to file
+export_todos_filtered("project.log", status_filter=False)  # Creates project_todos_pending.log
+
+# Get filtered TODO content as string
+content = get_todos_filtered_content("project.log", status_filter=False)
+print(content)
+```
+
+## CLI Usage
+
+The `loglog` command provides seven subcommands for working with loglog files from the terminal.
+
+### Convert Files
+
+```bash
+# Convert to interactive HTML
+loglog convert notes.log --to html
+
+# Convert to Markdown with custom header depth
+loglog convert notes.log --to md --header-levels 6
+
+# Convert multiple files
+loglog convert *.log --to md
+
+# Batch convert all .log files to HTML
+loglog batch-convert . --to html
+
+# Recursive batch conversion
+loglog batch-convert docs/ --to md --recursive
+
+# Preview changes in VS Code before writing
+loglog convert notes.log --to md --preview
+
+# Show unified diff without writing
+loglog convert notes.log --to md --diff
+```
+
+### Filter and Search
+
+```bash
+# Filter by hashtags
+loglog filter project.log --hashtags decision,important -o decisions.log
+
+# Search across files
+loglog search "budget" *.log
+
+# Regex search
+loglog search "TODO.*phase" *.log --regex
+
+# Case-sensitive search with context
+loglog search "Important" notes.log --case-sensitive --context 2
+```
+
+### TODO Management
+
+```bash
+# List all pending TODOs
+loglog todos project.log --status pending
+
+# Export TODOs as JSON
+loglog todos project.log --format json -o tasks.json
+
+# Export TODOs as CSV
+loglog todos project.log --format csv -o tasks.csv
+```
+
+### Display and Analyze
+
+```bash
+# Display tree structure
+loglog show notes.log
+
+# Show with node numbering
+loglog show notes.log --numbered
+
+# File statistics (total nodes, max depth, TODO counts, hashtag frequency)
+loglog stats project.log
+
+# JSON statistics for scripting
+loglog stats *.log --format json
+```
+
+## Project Structure
+
+```
+loglog/
+|-- loglog.py              # Core library: TreeNode, parsing, conversions
+|-- loglog_cli.py          # CLI application with 7 subcommands
+|-- setup.py               # Package installation configuration
+|-- setup_cli.py           # CLI symlink/wrapper setup script
+|-- generate_outputs.py    # Utility to regenerate test outputs
+|-- tree.ipynb             # Jupyter notebook with interactive examples
+|-- LICENSE                # GNU General Public License v3
+|-- demo/
+|   +-- lorem_ipsum.*      # Example files (.log, .md, .tex, .pdf)
+|-- docs/
+|   |-- CLI_USAGE.md       # Detailed CLI documentation
+|   |-- FEATURES.md        # Format philosophy and feature descriptions
+|   |-- FORMAT_CONVERSIONS.md  # Conversion algorithm documentation
+|   |-- PACKAGING.md       # Distribution and packaging guide
+|   +-- PROJECT_INDEX.md   # Full project documentation index
+|-- tests/
+|   |-- test_framework.py  # YAML-driven test framework
+|   |-- test_conversions.py  # Pytest-compatible test suite
+|   +-- data/              # Test inputs, expected outputs, manifest
+|-- benchmark/
+|   |-- benchmark_runner.py  # Performance benchmarking
+|   +-- *.log              # Test files of various sizes
+|-- loglog-mobile/         # React Native mobile app (Expo)
++-- loglog-knowledge/      # Knowledge graph extraction service
+```
+
+## Conversion Algorithm
+
+The Markdown conversion uses a **shallowest leaf depth** algorithm:
+
+1. **Scan the tree** to find the leaf node (a node with no children) at the minimum depth
+2. **Compute the header cutoff** as `min(shallowest_leaf_depth, header_levels + 1)`
+3. **Apply formatting**:
+   - Levels above the cutoff become Markdown headers (H1, H2, H3, ...)
+   - Levels at or below the cutoff become nested list items
+
+This ensures that the output always has proper Markdown structure regardless of how deep or shallow the original loglog content is. For example, a document where all items are at the top level produces only list items (no headers), while a deeply nested document gets appropriate header hierarchy.
+
+## Running Tests
+
+```bash
+# Using the test framework directly
+cd tests
+python3 test_framework.py
+
+# Or with pytest
+pytest test_conversions.py -v
+```
+
+The test framework uses a YAML manifest (`tests/data/test_manifest.yaml`) defining test cases across three categories:
+- **Markdown to LogLog** -- header hierarchy, TODO items, code blocks, quote blocks, mixed lists, nested structures
+- **LogLog to Markdown** -- basic hierarchy, TODO formatting, deep nesting
+- **Roundtrip** -- loglog -> markdown -> loglog and markdown -> loglog -> markdown to verify structural preservation
 
 ## License
 
-[MIT License](LICENSE) - Feel free to use LogLog for personal and commercial projects.
+This project is licensed under the [GNU General Public License v3.0](LICENSE).
+
+## Author
+
+Created by [Keivan Monfared](https://github.com/k1monfared).

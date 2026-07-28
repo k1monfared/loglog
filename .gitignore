@@ -1,3 +1,7 @@
+# Python
+__pycache__/
+*.py[cod]
+
 # Environment and personal configuration
 .env
 .env.local
@@ -17,3 +21,11 @@
 # Personal notes and scratch files
 **/personal_notes/
 **/scratch/
+
+# Build artifacts (packaging output, not source)
+/build/
+/build_simple/
+*.egg-info/
+*.deb
+*.db
+tests/data/temp/

@@ -1,0 +1,20 @@
+#!/usr/bin/env python3
+"""
+LogLog CLI - Main executable wrapper
+"""
+import sys
+import os
+
+# Add the package directory to Python path
+sys.path.insert(0, '/usr/lib/python3/dist-packages')
+
+try:
+    from loglog_cli import main
+    sys.exit(main())
+except ImportError as e:
+    print(f"Error: Could not import loglog_cli: {e}", file=sys.stderr)
+    print("Please ensure LogLog is properly installed.", file=sys.stderr)
+    sys.exit(1)
+except Exception as e:
+    print(f"Error: {e}", file=sys.stderr)
+    sys.exit(1)

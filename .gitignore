@@ -22,10 +22,9 @@ __pycache__/
 **/personal_notes/
 **/scratch/
 
-# Build artifacts (packaging output, not source)
-/build/
-/build_simple/
+# Extracted build scratch dir (regenerable from the .orig.tar.gz, has its own embedded .git)
+/build/loglog-1.0.0/
+
+# Generated packaging/test metadata
 *.egg-info/
-*.deb
-*.db
 tests/data/temp/

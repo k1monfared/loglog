@@ -1,0 +1,37 @@
+Format: 1.8
+Date: Sat, 07 Sep 2024 00:00:00 +0000
+Source: loglog
+Binary: loglog
+Built-For-Profiles: noudeb
+Architecture: all
+Version: 1.0.0-1
+Distribution: unstable
+Urgency: medium
+Maintainer: LogLog Development Team <info@loglog.dev>
+Changed-By: LogLog Development Team <info@loglog.dev>
+Description:
+ loglog     - Hierarchical note-taking format and CLI tool
+Changes:
+ loglog (1.0.0-1) unstable; urgency=medium
+ .
+   * Initial release of LogLog hierarchical note-taking tool
+   * Complete CLI interface with argparse-based commands
+   * File conversion to HTML, Markdown, LaTeX, and PDF formats
+   * Content filtering by hashtags and TODO status
+   * Batch processing capabilities for multiple files
+   * Search functionality with regex support
+   * Statistics and analysis tools
+   * Interactive HTML export with keyboard navigation
+   * TODO management with status tracking
+   * Cross-platform compatibility with plain text format
+   * Zero external Python dependencies (uses standard library only)
+   * Comprehensive documentation and examples
+Checksums-Sha1:
+ b642eaff7c95b1ca54f697ce717baf41eae8d628 39384 loglog_1.0.0-1_all.deb
+ b38012372e03aaf1cad25147ee3b0ce6edd24b89 6579 loglog_1.0.0-1_amd64.buildinfo
+Checksums-Sha256:
+ a76b088d79e72049404d6897b395a9c3527ccc5bf9f6abd3f98c3bb22455c7b7 39384 loglog_1.0.0-1_all.deb
+ 7b979d112d0de1f754555063d1d3845c20ed27e8c3214190f7a1c606f619cbb7 6579 loglog_1.0.0-1_amd64.buildinfo
+Files:
+ f9e19ca10aeec851520354d6c50ee026 39384 text optional loglog_1.0.0-1_all.deb
+ bc1a17e8787b19fa52795a5945e99b20 6579 text optional loglog_1.0.0-1_amd64.buildinfo
